@@ -3,7 +3,7 @@ Target = {}
 Target.Provider = 'none'
 if GetResourceState('ox_target') == 'started' or GetResourceState('ox_target') == 'starting' then Target.Provider = 'ox_target'
 elseif GetResourceState('qb-target') == 'started' then Target.Provider = 'qb-target' end
-print(('[dps-roxwoodracing] target: %s'):format(Target.Provider))
+print(('[dps-proracing] target: %s'):format(Target.Provider))
 
 ---@param ped number entity
 ---@param options table[] ox_target-style: { name, label, icon, event, canInteract, distance }

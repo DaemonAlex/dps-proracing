@@ -1,10 +1,10 @@
 # Install on Del Perro Sands
 
-1. Resource lives at `resources/[dps]/dps-roxwoodracing`. `ensure [dps]` already covers it.
+1. Resource lives at `resources/[dps]/dps-proracing`. `ensure [dps]` already covers it.
 2. qbx_core `shared/jobs.lua` — add:
 
 ```lua
-    ['roxwoodracing'] = {
+    ['proracing'] = {
         label = 'Roxwood Raceway',
         defaultDuty = true,
         offDutyPay = false,
@@ -34,5 +34,5 @@
 
    Coords are the paddock next to the lobby ped; adjust in-game once.
 4. Full server reboot. The boot log must show one line each for framework, notify, target, keys, fuel, banking, garages, bossmenu, spec catalogue, stats table, staff settings.
-5. The society account `roxwoodracing` is created on first boot with $0. Deposit a float before the first race, or set `Config.Economy.purseSource = 'house'` in `config/economy.lua`.
-6. Tables: `dps_roxwoodracing_stats` (renamed from `speedway_stats` if that exists) and `dps_roxwoodracing_settings` are created automatically.
+5. The society account `proracing` is created on first boot with $0. Deposit a float before the first race, or set `Config.Economy.purseSource = 'house'` in `config/economy.lua`.
+6. Tables: `dps_proracing_stats` (renamed from `speedway_stats` if that exists) and `dps_proracing_settings` are created automatically.

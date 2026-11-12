@@ -1,5 +1,5 @@
 -- Practice line storage: one row per named line, recorded by a Race Director.
-local TABLE = 'dps_roxwoodracing_lines'
+local TABLE = 'dps_proracing_lines'
 local trackOf = nil    -- line name -> track id, rebuilt after every save
 Lines = Lines or {}
 Lines.TABLE = TABLE
@@ -37,22 +37,22 @@ function Lines.List()
   return MySQL.query.await(('SELECT name, point_count, closed, created_at FROM %s ORDER BY name'):format(TABLE)) or {}
 end
 
-RegisterNetEvent('dps-roxwoodracing:line:save', function(name, points)
+RegisterNetEvent('dps-proracing:line:save', function(name, points)
   local src = source
   if not Staff.Can(src, 'director') then
-    TriggerClientEvent('dps-roxwoodracing:line:saved', src, false, Locale('staff_only'))
+    TriggerClientEvent('dps-proracing:line:saved', src, false, Locale('staff_only'))
     return
   end
   local ok, err, info = Lines.Validate(name, points, Config.Practice)
   if not ok then
-    TriggerClientEvent('dps-roxwoodracing:line:saved', src, false, Locale('line_invalid', tostring(err)))
+    TriggerClientEvent('dps-proracing:line:saved', src, false, Locale('line_invalid', tostring(err)))
     return
   end
   Lines.Save(name, points, info, Bridge.GetPlayerIdentifier(src))
   cache[name] = nil
   trackOf = nil
-  print(('[dps-roxwoodracing] practice line "%s" saved: %d points, %s'):format(name, info.count, info.closed and 'closed loop' or 'open'))
-  TriggerClientEvent('dps-roxwoodracing:line:saved', src, true,
+  print(('[dps-proracing] practice line "%s" saved: %d points, %s'):format(name, info.count, info.closed and 'closed loop' or 'open'))
+  TriggerClientEvent('dps-proracing:line:saved', src, true,
     Locale(info.closed and 'line_saved_closed' or 'line_saved_open', name, info.count), name)
 end)
 
@@ -74,7 +74,7 @@ local function trackFor(name)
   return trackOf[name]
 end
 
-lib.callback.register('dps-roxwoodracing:practice:lines', function(_)
+lib.callback.register('dps-proracing:practice:lines', function(_)
   local names = Config.Practice.ai and Config.Practice.ai.lineNames
   if not names then
     names = {}
@@ -87,7 +87,7 @@ lib.callback.register('dps-roxwoodracing:practice:lines', function(_)
       if pts then
         local raw = #pts
         if closed then pts = Lines.TrimClosure(pts, Config.Practice.recordSpacing or 12.0, 40) end
-        print(('[dps-roxwoodracing] practice line "%s": %d points (%d after closure trim), closed=%s'):format(name, raw, #pts, tostring(closed)))
+        print(('[dps-proracing] practice line "%s": %d points (%d after closure trim), closed=%s'):format(name, raw, #pts, tostring(closed)))
         pts = Lines.Smooth(pts, Config.Practice.smoothRadius or 2, Config.Practice.smoothPasses or 2, closed)
         local ai = Config.Practice.ai or {}
         local per = ai.perTrack and ai.perTrack[trackFor(name) or '']
@@ -103,7 +103,7 @@ lib.callback.register('dps-roxwoodracing:practice:lines', function(_)
         for _, L in ipairs(set) do
           Lines.SpeedProfilePhysics(L.pts, closed, physics)
         end
-        print(('[dps-roxwoodracing] practice line "%s": track %s, vmax %.0f aLat %.0f'):format(name, tostring(trackFor(name)), physics.vmax or 90.0, physics.aLat or 18.0))
+        print(('[dps-proracing] practice line "%s": track %s, vmax %.0f aLat %.0f'):format(name, tostring(trackFor(name)), physics.vmax or 90.0, physics.aLat or 18.0))
         cache[name] = set
       end
     end
@@ -123,21 +123,21 @@ local function keepEntity(src, netId, tries, first)
     if owner == src then
       SetEntityDistanceCullingRadius(ent, (Config.Practice.ai and Config.Practice.ai.cullRadius) or 6000.0)
       if first - tries > 2 then
-        print(('[dps-roxwoodracing] practice keep: net %d kept after %.1f s'):format(netId, (first - tries) * 0.5))
+        print(('[dps-proracing] practice keep: net %d kept after %.1f s'):format(netId, (first - tries) * 0.5))
       end
     else
-      print(('[dps-roxwoodracing] practice keep: net %d owned by %s, not %s; culling radius left alone'):format(netId, tostring(owner), tostring(src)))
+      print(('[dps-proracing] practice keep: net %d owned by %s, not %s; culling radius left alone'):format(netId, tostring(owner), tostring(src)))
     end
     return
   end
   if tries > 0 then
     SetTimeout(500, function() keepEntity(src, netId, tries - 1, first) end)
   else
-    print(('[dps-roxwoodracing] practice keep: net %d never appeared on the server (%d s), car will be culled beyond ~424 m'):format(netId, first // 2))
+    print(('[dps-proracing] practice keep: net %d never appeared on the server (%d s), car will be culled beyond ~424 m'):format(netId, first // 2))
   end
 end
 
-RegisterNetEvent('dps-roxwoodracing:practice:keep', function(netIds)
+RegisterNetEvent('dps-proracing:practice:keep', function(netIds)
   local src = source
   if type(netIds) ~= 'table' or #netIds > 4 then return end
   for _, netId in ipairs(netIds) do
@@ -145,12 +145,12 @@ RegisterNetEvent('dps-roxwoodracing:practice:keep', function(netIds)
   end
 end)
 
-lib.callback.register('dps-roxwoodracing:line:list', function(src)
+lib.callback.register('dps-proracing:line:list', function(src)
   if not Staff.Can(src, 'marshal') then return nil end
   return Lines.List()
 end)
 
 CreateThread(function()
   Lines.Init()
-  print(('[dps-roxwoodracing] practice lines: %d stored'):format(#Lines.List()))
+  print(('[dps-proracing] practice lines: %d stored'):format(#Lines.List()))
 end)

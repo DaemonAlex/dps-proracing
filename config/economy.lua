@@ -10,7 +10,7 @@ Config.Stats = {
 }
 
 Config.Job = {
-  name   = 'roxwoodracing',
+  name   = 'proracing',
   label  = 'Roxwood Raceway',
   grades = { marshal = 0, pitcrew = 1, director = 2, owner = 3 },
   -- Boss menu zone at the paddock office (next to the lobby ped)

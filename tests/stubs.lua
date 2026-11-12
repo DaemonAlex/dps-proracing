@@ -1,8 +1,8 @@
 -- Stubs for FiveM globals so shared/ and pure server modules load under lua5.4.
 STUB = { started = {}, clientEvents = {}, queries = {}, prints = {} }
 function GetResourceState(name) return STUB.started[name] and 'started' or 'missing' end
-function GetCurrentResourceName() return 'dps-roxwoodracing' end
-function GetInvokingResource() return 'dps-roxwoodracing' end
+function GetCurrentResourceName() return 'dps-proracing' end
+function GetInvokingResource() return 'dps-proracing' end
 function IsDuplicityVersion() return true end
 function GetGameTimer() return STUB.now or 0 end
 function GetPlayerName(pid) return 'Rockstar' .. tostring(pid) end

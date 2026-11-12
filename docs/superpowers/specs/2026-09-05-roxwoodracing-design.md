@@ -1,4 +1,4 @@
-# dps-roxwoodracing — design spec
+# dps-proracing — design spec
 
 Date: 2026-09-05 · Status: approved by Stor (artifact rev 1) · Source: rox_speedway v2.4.2 @ e6e21ff
 
@@ -12,7 +12,7 @@ any model, lobby-wide tune) and **Open** (bring your own car).
 ## Decisions already made
 
 - Cars: both modes, chosen per lobby by the host.
-- Ownership: a business with a job (`roxwoodracing`), not a city amenity.
+- Ownership: a business with a job (`proracing`), not a city amenity.
 - Scope: keep lobbies/laps/results/stats, pit crew NPCs, LED leaderboard sign,
   ghosting, entry fees and prize car.
 - Approach: port file-by-file into the [dps] layout.
@@ -21,10 +21,10 @@ any model, lobby-wide tune) and **Open** (bring your own car).
 
 ## 1. Shape
 
-Resource name `dps-roxwoodracing`, laid out like dps-parking / dps-towjob:
+Resource name `dps-proracing`, laid out like dps-parking / dps-towjob:
 
 ```
-dps-roxwoodracing/
+dps-proracing/
   fxmanifest.lua
   bridge/            framework bridge, loaded first: qbx_core → qb-core → es_extended
     init.lua  client.lua  server.lua
@@ -62,13 +62,13 @@ dps-roxwoodracing/
   docs/superpowers/specs/
 ```
 
-- Event and callback names change from `speedway:*` to `dps-roxwoodracing:*`.
+- Event and callback names change from `speedway:*` to `dps-proracing:*`.
   Verified 2026-09-05: nothing outside the resource references `speedway:`.
 - Old code is kept where proven, moved where misplaced, replaced only where it scans.
 
 ## 2. The business
 
-Job `roxwoodracing` in qbx_core `shared/jobs.lua` (one edit, reported):
+Job `proracing` in qbx_core `shared/jobs.lua` (one edit, reported):
 
 | Grade | Name | Pay/10 min | Can |
 |---|---|---|---|
@@ -147,7 +147,7 @@ is pushed once when a record changes. In-game menus/NUI snap to the #ff7a45 bran
 - `/raceway` (Marshal+): ox_lib context menu with end-race, clear-props, sign-mode.
   Job checked server-side.
 - `/racestats` stays. `/speedway_cleanup` and `/lb` fold into the above.
-- Table `dps_roxwoodracing_stats`: today's columns plus `spec_wins`, `open_wins`.
+- Table `dps_proracing_stats`: today's columns plus `spec_wins`, `open_wins`.
   On first boot, if `speedway_stats` exists and the new table does not, `RENAME TABLE`.
   Track keys (`Short_Track` …) unchanged so best laps still match.
 
@@ -171,10 +171,10 @@ Roxwood; one Spec race and one Open race, two players, three laps.
 
 Delivery steps, each reported before the next:
 
-1. Private repo `DaemonAlex/dps-roxwoodracing` carrying rox_speedway history; work on
+1. Private repo `DaemonAlex/dps-proracing` carrying rox_speedway history; work on
    branch `port-to-dps`; PR for Stor's approval; no attribution footers.
 2. Move `[dps]/rox_speedway` to backups (never deleted); clone the new resource in place.
-3. Add job `roxwoodracing` to jobs.lua.
+3. Add job `proracing` to jobs.lua.
 4. Add garage "Roxwood Raceway" at the paddock to jg-advancedgarages config.
 5. Full server reboot, then the proof list.
 

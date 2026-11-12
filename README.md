@@ -1,20 +1,22 @@
-# dps-roxwoodracing
+# dps-proracing
 
-Roxwood Raceway for Del Perro Sands. Lobby-based circuit racing with two modes, an AI practice grid that laps the circuit whenever nobody is racing, a practice mode with lap clock and adaptive AI, NPC pit crews, an in-world LED leaderboard, persistent career stats, staff controls, and a real business behind it: the `roxwoodracing` job, whose society account takes every entry fee and pays every purse.
+Roxwood Raceway for Del Perro Sands. Lobby-based circuit racing with two modes, an AI practice grid that laps the circuit whenever nobody is racing, a practice mode with lap clock and adaptive AI, NPC pit crews, an in-world LED leaderboard, persistent career stats, staff controls, and a real business behind it: the `proracing` job, whose society account takes every entry fee and pays every purse.
 
 Version 3.1.0. Descended from [max_rox_speedway](https://github.com/MaxSuperTech/max_rox_speedway) by MaxSuperTech, via rox_speedway (DrCannabis / DaemonAlex). Everything from v3.0 onward is the DPS port; the history is in `CHANGELOG.md`, the design in `docs/superpowers/specs/`, the build plan in `docs/superpowers/plans/`.
 
 ## Status
 
-Not running on DelPerroSands. The Roxwood map was removed from the server on 31 October 2026, and
-the raceway stood on that map. The script was not in the server's resource list on 1 November
-2026. The code is complete (version 3.1.0, with balance work up to 25 October 2026). The server
-runs qs-advancedracing for racing now.
+Not running on DelPerroSands. The script was called dps-roxwoodracing until 12 November 2026.
+
+It cannot go back on the server as it stands. Every track position in it is on the Roxwood map,
+and DelPerroSands has no Roxwood content. It needs a track on a map the server has before it can
+run. The names in the code are done: the resource, its events, its job and its database tables
+are all `proracing` now, and old race stats carry over by themselves.
 
 ## What it is for
 
 It runs Roxwood Raceway as a real place and a real business. Players race each other in lobbies,
-practise against AI cars when no race is on, and the `roxwoodracing` job takes the entry fees and
+practise against AI cars when no race is on, and the `proracing` job takes the entry fees and
 pays the prizes.
 
 ## On its own, and with other scripts
@@ -80,10 +82,10 @@ sounds come from a sound pack called dps-racesounds, which is not on the server.
 - **Persistent stats.** Wins, podiums, races, earnings, spec and open wins, best lap per layout. `/racestats`.
 - **Signs.** `/placesign` (Race Director, standing at a track) stores the LED sign position for that track; every client shows the Roxwood sign model there with that track's practice order. `/placesign clear` removes it.
 - **Tracks.** Stored lines cluster into tracks by location (`Config.Practice.trackJoinRadius`, 1500 m): each circuit gets its own zone, host, AI grid, start line and lap clock, so a second raceway only needs its own `/recordline`. The LED sign, race warnings and track clearing follow the track nearest the sign.
-- **Practice lines.** A Race Director records the racing line once with `/recordline <name>` (drive or walk one easy lap, run it again to save; points every 12 m, stored in `dps_roxwoodracing_lines`). Lines drive the AI practice cars.
+- **Practice lines.** A Race Director records the racing line once with `/recordline <name>` (drive or walk one easy lap, run it again to save; points every 12 m, stored in `dps_proracing_lines`). Lines drive the AI practice cars.
 - **AI practice cars.** When no race is live and a player is near the track, an open-wheel grid laps the recorded lines, each car on a random line with its own pace and lane bias, slowing behind and passing other racers. They are local to each client, so they cost the server nothing, and they vanish the moment a race goes live. `Config.Practice.ai` sets the count, models, speed, stagger and awareness.
 - **Practice mode.** Anyone on the track outside a race is practising: crossing the start line starts a lap clock, the next crossing gives the lap time, a personal best and a rolling average of the last five (`practice_best_ms`, `practice_laps`, `practice_recent` in the stats table). One server-elected host client runs the shared AI grid; the AI reacts to every player and its pace follows the best rolling average among players on the track (`Config.Practice.mode`). The sign shows the combined running order. When a lobby is created, practising players are told to finish their lap and clear the track or join; at GO anyone still on the track outside the race is moved to the paddock.
-- **Static pit cars.** A Race Director parks a car and runs `/pitcar`; that model, spot and heading are stored (`dps_roxwoodracing_pitcars`) and every client shows a frozen, locked copy there. `/pitcar clear` removes them all.
+- **Static pit cars.** A Race Director parks a car and runs `/pitcar`; that model, spot and heading are stored (`dps_proracing_pitcars`) and every client shows a frozen, locked copy there. `/pitcar clear` removes them all.
 - **LED sign.** A physical leaderboard at the raceway in a bold signage face: live positions during a race, the practice running order while the AI grid runs, best-ever times when idle, refreshed when a record falls. The three ad panels rotate the DPS sponsor slides in `html/ads/` (`Config.Leaderboard.adUrls`); the texture replacement is re-applied whenever a player comes within `signRadius` of `signCoords`.
 - **Staff.** Marshals end stuck races, clear props and switch the sign; Race Directors set fees and purse; the Owner has the boss menu and bank access.
 
@@ -134,7 +136,7 @@ Whenever no race is live, the circuit is not empty.
 
 ## Money
 
-Everything goes through the society account named after the job (`roxwoodracing`) in Renewed-Banking, so the ledger is the single source of truth.
+Everything goes through the society account named after the job (`proracing`) in Renewed-Banking, so the ledger is the single source of truth.
 
 | Flow | Direction | Rule |
 |---|---|---|
@@ -157,7 +159,7 @@ Grades in `qbx_core/shared/jobs.lua` (see Install):
 | 2 | Race Director | 120 | + set entry fee, podium purse, show-up and fastest-lap bonuses |
 | 3 | Owner | 160 | Boss menu, bank access (`isboss`, `bankAuth`), hires and fires |
 
-**Raceway Control** opens from `/raceway` (Marshal and up) or from the qbx_management boss menu. It lists live lobbies (end race, sign mode), a "clear props" action that only reaches players not currently in a lobby, and for Directors the account balance plus the six money settings. Settings persist in `dps_roxwoodracing_settings`, override `Config.Economy` at boot, and are capped at `maxStaffSetting`.
+**Raceway Control** opens from `/raceway` (Marshal and up) or from the qbx_management boss menu. It lists live lobbies (end race, sign mode), a "clear props" action that only reaches players not currently in a lobby, and for Directors the account balance plus the six money settings. Settings persist in `dps_proracing_settings`, override `Config.Economy` at boot, and are capped at `maxStaffSetting`.
 
 ## Requirements and what is detected
 
@@ -176,11 +178,11 @@ Hard requirements: **ox_lib**, **oxmysql**, and a framework (qbx_core first, the
 
 ## Install
 
-1. Put the folder at `resources/[dps]/dps-roxwoodracing` (or anywhere `ensure`d after ox_lib, oxmysql, your framework and the vendors above).
+1. Put the folder at `resources/[dps]/dps-proracing` (or anywhere `ensure`d after ox_lib, oxmysql, your framework and the vendors above).
 2. Add the job. qbx_core `shared/jobs.lua`:
 
 ```lua
-['roxwoodracing'] = {
+['proracing'] = {
     label = 'Roxwood Raceway',
     defaultDuty = true,
     offDutyPay = false,
@@ -208,8 +210,8 @@ Hard requirements: **ox_lib**, **oxmysql**, and a framework (qbx_core first, the
 },
 ```
 
-4. Restart the server. The boot log must show `framework`, `banking`, `garages`, `bossmenu`, `stats: table ready`, `spec catalogue`, `staff settings loaded` lines from `[dps-roxwoodracing]`. Client-side lines (`notify`, `target`, `keys`, `fuel`) appear in the player's F8 console.
-5. Give someone the job (`/setjob <id> roxwoodracing 3`), open the boss menu, and deposit a float into the account.
+4. Restart the server. The boot log must show `framework`, `banking`, `garages`, `bossmenu`, `stats: table ready`, `spec catalogue`, `staff settings loaded` lines from `[dps-proracing]`. Client-side lines (`notify`, `target`, `keys`, `fuel`) appear in the player's F8 console.
+5. Give someone the job (`/setjob <id> proracing 3`), open the boss menu, and deposit a float into the account.
 6. Walk the paddock once: the lobby ped, grid slots, pit boxes, the LED sign and the garage marker are placed for the Roxwood County map as shipped; nudge `config/tracks.lua`, `config/pit.lua` and `Config.Job.bossCoords` if your build differs.
 
 Migration from rox_speedway: the old `speedway_stats` table is renamed automatically on first boot; nothing is lost. Remove the old resource first, they cannot run side by side.
@@ -262,7 +264,7 @@ Migration from rox_speedway: the old `speedway_stats` table is renamed automatic
 
 | Key | Default | Meaning |
 |---|---|---|
-| `Job.name` / `Job.label` | `roxwoodracing` / `Roxwood Raceway` | Job and society account name |
+| `Job.name` / `Job.label` | `proracing` / `Roxwood Raceway` | Job and society account name |
 | `Job.grades` | marshal 0, pitcrew 1, director 2, owner 3 | Grade thresholds the script checks |
 | `Job.bossCoords` | paddock office | qbx_management boss zone |
 | `Economy.purseSource` | `'society'` | `'society'` pays from the account; `'house'` mints but logs |
@@ -328,16 +330,16 @@ Key mapping `speedway_lobby_interact` (default F2) can be rebound in FiveM setti
 
 | Table | Purpose |
 |---|---|
-| `dps_roxwoodracing_stats` | One row per citizenid: `total_races`, `wins`, `top3`, `total_earnings`, `best_laps` (JSON keyed by layout, ms), `spec_wins`, `open_wins`, `practice_best_ms`, `practice_laps`, `practice_recent` (last five laps, JSON), `last_race`. Created on boot; `speedway_stats` is renamed into it if present. |
-| `dps_roxwoodracing_settings` | `k`/`v` staff overrides (`payout1..3`, `showup`, `bestlap`, `entryfee`). |
-| `dps_roxwoodracing_lines` | Recorded practice lines: `name`, `points` (JSON), `point_count`, `closed`, `citizenid`. Raw as recorded; smoothing, trimming and variants happen on serve. |
-| `dps_roxwoodracing_pitcars` | Static pit cars: `model`, `x`, `y`, `z`, `h`, `citizenid`. |
+| `dps_proracing_stats` | One row per citizenid: `total_races`, `wins`, `top3`, `total_earnings`, `best_laps` (JSON keyed by layout, ms), `spec_wins`, `open_wins`, `practice_best_ms`, `practice_laps`, `practice_recent` (last five laps, JSON), `last_race`. Created on boot; `speedway_stats` is renamed into it if present. |
+| `dps_proracing_settings` | `k`/`v` staff overrides (`payout1..3`, `showup`, `bestlap`, `entryfee`). |
+| `dps_proracing_lines` | Recorded practice lines: `name`, `points` (JSON), `point_count`, `closed`, `citizenid`. Raw as recorded; smoothing, trimming and variants happen on serve. |
+| `dps_proracing_pitcars` | Static pit cars: `model`, `x`, `y`, `z`, `h`, `citizenid`. |
 
 Reads elsewhere: `player_vehicles` (ownership checks, prize cars, plate uniqueness), `players.charinfo` (offline names on the LED sign), Renewed-Banking's own tables through its exports. The `ALTER TABLE … ADD COLUMN IF NOT EXISTS` migration is MariaDB syntax.
 
 ## Events, callbacks and exports
 
-Prefix is `dps-roxwoodracing:`. Client → server events are validated and rate-limited server-side; nothing in the list below trusts client data for money, position, fuel or teleports.
+Prefix is `dps-proracing:`. Client → server events are validated and rate-limited server-side; nothing in the list below trusts client data for money, position, fuel or teleports.
 
 **Client → server**
 
@@ -366,7 +368,7 @@ Prefix is `dps-roxwoodracing:`. Client → server events are validated and rate-
 
 **Exports (server)**: `ShowIdleLeaderboard()`, `StopIdleLeaderboard()`.
 
-**Internal events**: `dps-roxwoodracing:recordSet` (server, fired when a best lap is beaten; the idle sign listens), `amir-leaderboard:setPlayerNames/Times/Text/AdUrls` (server, the sign's API kept from the original).
+**Internal events**: `dps-proracing:recordSet` (server, fired when a best lap is beaten; the idle sign listens), `amir-leaderboard:setPlayerNames/Times/Text/AdUrls` (server, the sign's API kept from the original).
 
 ## Layout
 
@@ -414,8 +416,8 @@ Syntax-checks every Lua file with `luac5.4 -p`, then runs `tests/run.lua`, which
 | Spec menu shows only addon cars | Registry has no vanilla models | Add models to `Config.SpecFallbackVehicles`; they join the `Vanilla` group |
 | `preset X has no registered vehicles; skipped` | None of the preset's models exist in the catalogue | Fix the model names or drop the preset |
 | "Sit in a vehicle you own to join an Open race" | Not in the driver seat, plate not in your garage, or the car does not exist server-side | Sit in the driver seat of an owned car |
-| Raceway Control says "Raceway staff only" | No `roxwoodracing` job | `/setjob <id> roxwoodracing <grade>` |
-| Pit stop refuels visually but fuel drops back | Fuel vendor not detected | Check the client F8 line `[dps-roxwoodracing] fuel: …`; add the export to `integrations/fuel.lua` |
+| Raceway Control says "Raceway staff only" | No `proracing` job | `/setjob <id> proracing <grade>` |
+| Pit stop refuels visually but fuel drops back | Fuel vendor not detected | Check the client F8 line `[dps-proracing] fuel: …`; add the export to `integrations/fuel.lua` |
 | Boss menu item missing | Not holding the job, or qbx_management absent | Item is registered only for the job's players; check the boot line `bossmenu: …` |
 | LED sign blank | DUI failed or `Leaderboard.enabled = false` | Client F8 for `sign:` lines; the ytyp/ymap in `stream/` must load |
 | LED sign shows a checkerboard with red digits | The texture replacement never applied on that client | That is the model's baked placeholder. F8 should show `sign: texture replacement applied (near sign, model loaded=true)`; if the DUI line says it was not available the problem is client-side CEF |
@@ -436,6 +438,7 @@ License: see `LICENSE`.
 
 ## Recent changes
 
+- **12 November 2026. Renamed to dps-proracing.** The resource name, events, the `proracing` job and the two database tables are renamed. Stats saved under the old table name are carried over at start. Tracked backup files are removed. The track data is still Roxwood and still needs replacing.
 - **12 November 2026.** README: status, what it is for, how it works alone and with paid scripts, other DPS scripts.
 - **25 October 2026.** Cars are balanced per class and per track, for the AI and for players.
 - **12 October 2026.** Cars and peds are placed on the ground before they are frozen. Race cars
@@ -446,7 +449,7 @@ License: see `LICENSE`.
 - **8 and 9 September 2026.** LED signs at every track. Ten practice car sets across three
   tracks.
 - **7 September 2026.** Version 3.1.0: the AI practice grid and practice mode.
-- **5 September 2026.** Version 3.0.0: renamed dps-roxwoodracing, with the raceway job and
+- **5 September 2026.** Version 3.0.0: renamed dps-proracing, with the raceway job and
   society money.
 
 ## Author

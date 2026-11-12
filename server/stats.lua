@@ -1,5 +1,5 @@
 Stats = {}
-Stats.TABLE = 'dps_roxwoodracing_stats'
+Stats.TABLE = 'dps_proracing_stats'
 
 local function tableExists(name)
   local n = MySQL.scalar.await('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?', { name })
@@ -8,10 +8,16 @@ end
 
 function Stats.Migrate()
   if not (Config.Stats and Config.Stats.enabled) then return end
-  local oldExists, newExists = tableExists('speedway_stats'), tableExists(Stats.TABLE)
-  if oldExists and not newExists then
-    MySQL.query.await(('RENAME TABLE speedway_stats TO %s'):format(Stats.TABLE))
-    print('[dps-roxwoodracing] stats: renamed speedway_stats -> ' .. Stats.TABLE)
+  -- Older names this table has had, newest first. The first one found is carried over.
+  -- (dps_roxwoodracing_stats: the script was dps-roxwoodracing until 12 November 2026.)
+  if not tableExists(Stats.TABLE) then
+    for _, old in ipairs({ 'dps_roxwoodracing_stats', 'speedway_stats' }) do
+      if tableExists(old) then
+        MySQL.query.await(('RENAME TABLE %s TO %s'):format(old, Stats.TABLE))
+        print(('[dps-proracing] stats: renamed %s -> %s'):format(old, Stats.TABLE))
+        break
+      end
+    end
   end
   MySQL.query.await(([[
     CREATE TABLE IF NOT EXISTS %s (
@@ -29,7 +35,7 @@ function Stats.Migrate()
   MySQL.query.await(('ALTER TABLE %s ADD COLUMN IF NOT EXISTS practice_best_ms INT DEFAULT NULL'):format(Stats.TABLE))
   MySQL.query.await(('ALTER TABLE %s ADD COLUMN IF NOT EXISTS practice_laps INT DEFAULT 0'):format(Stats.TABLE))
   MySQL.query.await(("ALTER TABLE %s ADD COLUMN IF NOT EXISTS practice_recent VARCHAR(255) DEFAULT '[]'"):format(Stats.TABLE))
-  print('[dps-roxwoodracing] stats: table ready')
+  print('[dps-proracing] stats: table ready')
 end
 
 function Stats.MergeBestLap(bestLaps, track, lap)
@@ -66,9 +72,9 @@ function Stats.Save(pid, position, track, bestLap, earnings, mode)
       total_races = total_races + 1, wins = wins + ?, top3 = top3 + ?, total_earnings = total_earnings + ?,
       best_laps = ?, spec_wins = spec_wins + ?, open_wins = open_wins + ?, last_race = NOW()]]):format(Stats.TABLE),
     { cid, isWin, isTop3, earnings, encoded, specWin, openWin, isWin, isTop3, earnings, encoded, specWin, openWin })
-  if newRecord then TriggerEvent('dps-roxwoodracing:recordSet') end
+  if newRecord then TriggerEvent('dps-proracing:recordSet') end
   if Config.Stats.showAfterRace then
-    TriggerClientEvent('dps-roxwoodracing:client:statsNotify', pid, {
+    TriggerClientEvent('dps-proracing:client:statsNotify', pid, {
       wins = prevWins + isWin, totalRaces = prevRaces + 1, bestLap = bestLaps[track], newRecord = newRecord and bestLap or nil,
     })
   end
@@ -100,7 +106,7 @@ function Stats.SavePracticeLap(cid, ms, keep)
   return best, avg, isBest, laps
 end
 
-lib.callback.register('dps-roxwoodracing:getPlayerStats', function(source)
+lib.callback.register('dps-proracing:getPlayerStats', function(source)
   local cid = Bridge.GetPlayerIdentifier(source)
   if not cid then return nil end
   local row = MySQL.single.await(('SELECT * FROM %s WHERE citizenid = ?'):format(Stats.TABLE), { cid })

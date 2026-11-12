@@ -43,7 +43,7 @@ function Lobbies.SpecCatalogue()
       end
     end
   else
-    print('[dps-roxwoodracing] WARNING: no vehicle registry; spec menu uses Config.SpecFallbackVehicles only')
+    print('[dps-proracing] WARNING: no vehicle registry; spec menu uses Config.SpecFallbackVehicles only')
   end
   -- Base-game models are not in the addon registry but always exist client-side: merge the
   -- curated vanilla list under its own group so presets (Super, Tuner, ...) can resolve.
@@ -74,14 +74,14 @@ function Lobbies.SpecCatalogue()
         local k = 'Preset' .. key
         classes[k] = { label = preset.label or key, vehicles = list }; order[#order+1] = k
       else
-        print(('[dps-roxwoodracing] preset %s has no registered vehicles; skipped'):format(key))
+        print(('[dps-proracing] preset %s has no registered vehicles; skipped'):format(key))
       end
     end
   end
   Config.SpecClassKeys = {}
   for k in pairs(classes) do Config.SpecClassKeys[k] = true end
   Lobbies._catalogue = { classes = classes, order = order }
-  print(('[dps-roxwoodracing] spec catalogue: %d vehicles in %d groups'):format(#classes.All.vehicles, #order))
+  print(('[dps-proracing] spec catalogue: %d vehicles in %d groups'):format(#classes.All.vehicles, #order))
   return Lobbies._catalogue
 end
 
@@ -127,8 +127,8 @@ function Lobbies.VerifyOwnedVehicle(pid, plate)
   return (tonumber(n) or 0) > 0
 end
 
-lib.callback.register('dps-roxwoodracing:getSpecCatalogue', function() return Lobbies.SpecCatalogue() end)
-lib.callback.register('dps-roxwoodracing:getOpenClasses', function()
+lib.callback.register('dps-proracing:getSpecCatalogue', function() return Lobbies.SpecCatalogue() end)
+lib.callback.register('dps-proracing:getOpenClasses', function()
   local out = {}
   for k, v in pairs(Config.OpenClasses) do out[#out+1] = { value = k, label = v.label } end
   table.sort(out, function(a, b) if a.value == 'Any' then return true elseif b.value == 'Any' then return false end return a.label < b.label end)

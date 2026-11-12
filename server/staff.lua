@@ -1,5 +1,5 @@
 Staff = {}
-local SETTINGS = 'dps_roxwoodracing_settings'
+local SETTINGS = 'dps_proracing_settings'
 local keys = {
   payout1 = function(v) Config.Economy.payouts[1] = v end,
   payout2 = function(v) Config.Economy.payouts[2] = v end,
@@ -27,7 +27,7 @@ function Staff.LoadSettings()
   MySQL.query.await(('CREATE TABLE IF NOT EXISTS %s (k VARCHAR(40) NOT NULL PRIMARY KEY, v VARCHAR(200))'):format(SETTINGS))
   local rows = MySQL.query.await(('SELECT k, v FROM %s'):format(SETTINGS)) or {}
   for _, r in ipairs(rows) do if keys[r.k] and tonumber(r.v) then keys[r.k](tonumber(r.v)) end end
-  print(('[dps-roxwoodracing] staff settings loaded: %d overrides'):format(#rows))
+  print(('[dps-proracing] staff settings loaded: %d overrides'):format(#rows))
 end
 
 function Staff.Snapshot()
@@ -37,15 +37,15 @@ function Staff.Snapshot()
            balance = (Banking and Banking.Provider ~= 'none') and Banking.GetBalance(Config.Job.name) or 0, lobbies = Race.ListLobbies and Race.ListLobbies() or {} }
 end
 
-lib.callback.register('dps-roxwoodracing:staff:snapshot', function(src)
+lib.callback.register('dps-proracing:staff:snapshot', function(src)
   if not Staff.Can(src, 'marshal') then return nil end
   return Staff.Snapshot()
 end)
 
-RegisterNetEvent('dps-roxwoodracing:staff:action', function(action, payload)
+RegisterNetEvent('dps-proracing:staff:action', function(action, payload)
   local src = source
   payload = type(payload) == 'table' and payload or {}
-  local function deny() TriggerClientEvent('dps-roxwoodracing:client:notify', src, Config.Job.label, Locale('staff_only'), 'error') end
+  local function deny() TriggerClientEvent('dps-proracing:client:notify', src, Config.Job.label, Locale('staff_only'), 'error') end
   if action == 'endRace' then
     if not Staff.Can(src, 'marshal') then return deny() end
     Race.EndLobby(payload.lobby, 'staff')
@@ -55,7 +55,7 @@ RegisterNetEvent('dps-roxwoodracing:staff:action', function(action, payload)
     for _, pidStr in ipairs(GetPlayers()) do
       local pid = tonumber(pidStr)
       if pid and not (Race.IsPlayerInLobby and Race.IsPlayerInLobby(pid)) then
-        TriggerClientEvent('dps-roxwoodracing:client:destroyprops', pid)
+        TriggerClientEvent('dps-proracing:client:destroyprops', pid)
       end
     end
   elseif action == 'signMode' then
@@ -64,7 +64,7 @@ RegisterNetEvent('dps-roxwoodracing:staff:action', function(action, payload)
   elseif action == 'setSetting' then
     if not Staff.Can(src, 'director') then return deny() end
     if not Staff.SetSetting(payload.key, payload.value) then
-      TriggerClientEvent('dps-roxwoodracing:client:notify', src, Config.Job.label, 'Invalid value.', 'error')
+      TriggerClientEvent('dps-proracing:client:notify', src, Config.Job.label, 'Invalid value.', 'error')
     end
   end
 end)

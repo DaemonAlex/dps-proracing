@@ -1,4 +1,4 @@
-local function loadBanking() Config = { Job = { name = 'roxwoodracing', label = 'Roxwood Raceway' } }; Banking = nil; dofile('integrations/banking.lua') end
+local function loadBanking() Config = { Job = { name = 'proracing', label = 'Roxwood Raceway' } }; Banking = nil; dofile('integrations/banking.lua') end
 
 TEST('Renewed-Banking: deposit/withdraw call the exports and log a transaction', function()
   RESET_STUB(); STUB.started = { ['Renewed-Banking'] = true }
@@ -12,19 +12,19 @@ TEST('Renewed-Banking: deposit/withdraw call the exports and log a transaction',
   } }
   loadBanking()
   EQ(Banking.Provider, 'Renewed-Banking')
-  TRUTHY(Banking.EnsureAccount('roxwoodracing', 'Roxwood Raceway'))
-  TRUTHY(Banking.Deposit('roxwoodracing', 500, 'Entry fee', 'Lobby X', 'Sam Rider')); EQ(bal, 2500)
-  TRUTHY(Banking.Withdraw('roxwoodracing', 1000, 'Purse', '1st place', 'Sam Rider')); EQ(bal, 1500)
-  FALSY(Banking.Withdraw('roxwoodracing', 9999, 'Purse', 'too much', 'Sam Rider')); EQ(bal, 1500)
+  TRUTHY(Banking.EnsureAccount('proracing', 'Roxwood Raceway'))
+  TRUTHY(Banking.Deposit('proracing', 500, 'Entry fee', 'Lobby X', 'Sam Rider')); EQ(bal, 2500)
+  TRUTHY(Banking.Withdraw('proracing', 1000, 'Purse', '1st place', 'Sam Rider')); EQ(bal, 1500)
+  FALSY(Banking.Withdraw('proracing', 9999, 'Purse', 'too much', 'Sam Rider')); EQ(bal, 1500)
   EQ(#log, 2); EQ(log[1][4], 'deposit'); EQ(log[2][4], 'withdraw')
 end)
 
 TEST('no banking: Deposit/Withdraw succeed as no-ops and balance is huge', function()
   RESET_STUB(); loadBanking()
   EQ(Banking.Provider, 'none')
-  TRUTHY(Banking.Deposit('roxwoodracing', 5, 't', 'm', 'x'))
-  TRUTHY(Banking.Withdraw('roxwoodracing', 5, 't', 'm', 'x'))
-  TRUTHY(Banking.GetBalance('roxwoodracing') >= 1e9)
+  TRUTHY(Banking.Deposit('proracing', 5, 't', 'm', 'x'))
+  TRUTHY(Banking.Withdraw('proracing', 5, 't', 'm', 'x'))
+  TRUTHY(Banking.GetBalance('proracing') >= 1e9)
 end)
 
 TEST('Garages: jg present -> insert row with garage_id; absent -> garage column', function()

@@ -1,6 +1,6 @@
 -- client/c_pit.lua
 
-if Config.DebugPrints then print("[dps-roxwoodracing] c_pit.lua loaded") end
+if Config.DebugPrints then print("[dps-proracing] c_pit.lua loaded") end
 
 -- Config is a shared global
 
@@ -37,12 +37,12 @@ local function buildModelPool()
             if hash then
                 pool[#pool + 1] = hash
             elseif Config.DebugPrints then
-                print(("[dps-roxwoodracing] pit crew model '%s' not available, skipping"):format(name))
+                print(("[dps-proracing] pit crew model '%s' not available, skipping"):format(name))
             end
         end
     end
     if #pool == 0 then
-        print("[dps-roxwoodracing] WARNING: no configured pit crew model loaded, using s_m_y_xmech_02")
+        print("[dps-proracing] WARNING: no configured pit crew model loaded, using s_m_y_xmech_02")
         local hash = loadPedModel('s_m_y_xmech_02', 8000)
         if hash then pool[1] = hash end
     end
@@ -90,7 +90,7 @@ local function resnapZone(idx)
                 SetEntityCoords(ped, fixed.x, fixed.y, fixed.z, false, false, false, false)
                 data.home[ped] = fixed
                 if data.crewHome[ped] then data.crewHome[ped] = fixed end
-                if Config.DebugPrints then print(("[dps-roxwoodracing] re-snapped pit ped to ground (%.2f -> %.2f)"):format(home.z, gz)) end
+                if Config.DebugPrints then print(("[dps-proracing] re-snapped pit ped to ground (%.2f -> %.2f)"):format(home.z, gz)) end
             end
         end
     end
@@ -99,16 +99,16 @@ end
 CreateThread(function()
     Wait(100)
 
-    if Config.DebugPrints then print(("[dps-roxwoodracing] Config.PitCrewZones has %d entries"):format(#Config.PitCrewZones)) end
+    if Config.DebugPrints then print(("[dps-proracing] Config.PitCrewZones has %d entries"):format(#Config.PitCrewZones)) end
 
     local pool = buildModelPool()
     if #pool == 0 then
-        print("[dps-roxwoodracing] ERROR: could not load any pit crew ped model; aborting pit crew spawn")
+        print("[dps-proracing] ERROR: could not load any pit crew ped model; aborting pit crew spawn")
         return
     end
 
     for idx, zone in ipairs(Config.PitCrewZones) do
-        if Config.DebugPrints then print(("[dps-roxwoodracing] Spawning pit crew for zone %d at %s"):format(idx, tostring(zone.coords))) end
+        if Config.DebugPrints then print(("[dps-proracing] Spawning pit crew for zone %d at %s"):format(idx, tostring(zone.coords))) end
         pitZones[idx] = { idle = {}, crew = {}, crewIdle = {}, crewHome = {}, home = {}, spawnHeading = 0.0 }
         local data = pitZones[idx]
 
@@ -156,7 +156,7 @@ CreateThread(function()
         end
 
         if Config.DebugPrints then
-            print(("[dps-roxwoodracing] pit zone %d: %d/%d peds placed on found ground"):format(idx, grounded, #idleBase + #crewBase))
+            print(("[dps-proracing] pit zone %d: %d/%d peds placed on found ground"):format(idx, grounded, #idleBase + #crewBase))
         end
 
         -- Re-snap to the ground when a player first gets near (collision streamed by then)
@@ -290,7 +290,7 @@ local function RunPitStop(veh, idx)
     end
 
     -- DEBUG: where they’re going
-    if Config.DebugPrints then print("[dps-roxwoodracing] REFUELER moving to →", fuelPos) end
+    if Config.DebugPrints then print("[dps-proracing] REFUELER moving to →", fuelPos) end
 
     -- prepare peds for movement: unfreeze, allow tasks, keep tasks
     local function prep(p)
@@ -325,7 +325,7 @@ local function RunPitStop(veh, idx)
     TaskGoStraightToCoord(hoodPed,   frontApproach.x, frontApproach.y, frontApproach.z,  crewSpeed, -1, GetEntityHeading(veh), 0.5)
 
     if Config.DebugPrints then
-        print(string.format("[dps-roxwoodracing] Move orders → refuel:(%.2f,%.2f,%.2f) hood:(%.2f,%.2f,%.2f) tire:(%.2f,%.2f,%.2f)",
+        print(string.format("[dps-proracing] Move orders → refuel:(%.2f,%.2f,%.2f) hood:(%.2f,%.2f,%.2f) tire:(%.2f,%.2f,%.2f)",
             rfx,rfy,rfz2, frontPos.x,frontPos.y,frontPos.z, sidePos.x,sidePos.y,sidePos.z))
     end
 
@@ -460,7 +460,7 @@ local function RunPitStop(veh, idx)
     if readBack < 99.0 then
         Fuel.SetFull(veh)
         local nid = NetworkGetNetworkIdFromEntity(veh)
-        if nid and nid ~= 0 then TriggerServerEvent('dps-roxwoodracing:server:setFuel', nid, 100.0) end
+        if nid and nid ~= 0 then TriggerServerEvent('dps-proracing:server:setFuel', nid, 100.0) end
     end
     -- short client-side watchdog specifically for LegacyFuel to prevent late cache restores
     CreateThread(function()
@@ -570,7 +570,7 @@ local function RunPitStop(veh, idx)
         if lvl < 99.0 then
             Fuel.SetFull(veh)
             local nid = NetworkGetNetworkIdFromEntity(veh)
-            if nid and nid ~= 0 then TriggerServerEvent('dps-roxwoodracing:server:setFuel', nid, 100.0) end
+            if nid and nid ~= 0 then TriggerServerEvent('dps-proracing:server:setFuel', nid, 100.0) end
         end
     end)
     AddTextEntry("PIT_RETURN", "Return to Race")

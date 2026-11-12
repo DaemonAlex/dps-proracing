@@ -55,7 +55,7 @@ function ShowLobbyDisplay(name, members)
         if Notify then
             Notify(Locale("player_joined_title"), Locale("notify_interact_full", (Config.InteractKeyLabel or 'F2')), "inform", 7000)
         else
-            print(("[dps-roxwoodracing] " .. Locale("hint_interact", (Config.InteractKeyLabel or 'F2'))))
+            print(("[dps-proracing] " .. Locale("hint_interact", (Config.InteractKeyLabel or 'F2'))))
         end
     end
 end
@@ -146,7 +146,7 @@ RegisterKeyMapping('speedway_lobby_interact', Locale('keybind_interact_label'), 
 -- NUI callbacks from the tablet buttons
 RegisterNUICallback('lobbyStart', function(data, cb)
     if lobbyOwner ~= GetPlayerServerId(PlayerId()) then cb('not_host'); return end
-    if currentLobby then TriggerServerEvent('dps-roxwoodracing:startRace', currentLobby) end
+    if currentLobby then TriggerServerEvent('dps-proracing:startRace', currentLobby) end
     -- Release focus after click
     lobbyFocus = false
     SetNuiFocusKeepInput(false)
@@ -159,7 +159,7 @@ RegisterNUICallback('lobbyStart', function(data, cb)
 end)
 
 RegisterNUICallback('lobbyLeave', function(_, cb)
-    if currentLobby then TriggerServerEvent('dps-roxwoodracing:leaveLobby', currentLobby) end
+    if currentLobby then TriggerServerEvent('dps-proracing:leaveLobby', currentLobby) end
     lobbyFocus = false
     SetNuiFocusKeepInput(false)
     SetNuiFocus(false, false)
@@ -184,7 +184,7 @@ end)
 AddEventHandler('onResourceStop', function(resName)
     if resName ~= GetCurrentResourceName() then return end
     -- Reuse the same cleanup as server-triggered destroy
-    TriggerEvent('dps-roxwoodracing:client:destroyprops')
+    TriggerEvent('dps-proracing:client:destroyprops')
 end)
 local currentProps         = {}
 local currentZones         = {}
@@ -396,8 +396,8 @@ CreateThread(function()
     SetBlockingOfNonTemporaryEvents(ped, true)
 
     Target.AddPed(ped, {
-      { name = 'roxwood_create_lobby', event = 'dps-roxwoodracing:client:createLobby', icon = 'fa-solid fa-flag-checkered', label = Locale("create_lobby"), canInteract = function() return not hasLobby end, distance = 2.5 },
-      { name = 'roxwood_join_lobby',   event = 'dps-roxwoodracing:client:joinLobby',   icon = 'fa-solid fa-user-plus',       label = Locale("join_lobby"),   canInteract = function() return hasLobby and not currentLobby end, distance = 2.5 },
+      { name = 'roxwood_create_lobby', event = 'dps-proracing:client:createLobby', icon = 'fa-solid fa-flag-checkered', label = Locale("create_lobby"), canInteract = function() return not hasLobby end, distance = 2.5 },
+      { name = 'roxwood_join_lobby',   event = 'dps-proracing:client:joinLobby',   icon = 'fa-solid fa-user-plus',       label = Locale("join_lobby"),   canInteract = function() return hasLobby and not currentLobby end, distance = 2.5 },
     })
     local blip = AddBlipForCoord(cfg.coords.x, cfg.coords.y, cfg.coords.z)
     SetBlipSprite(blip, 315); SetBlipDisplay(blip, 4); SetBlipScale(blip, 0.8); SetBlipAsShortRange(blip, false)
@@ -407,11 +407,11 @@ end)
 --------------------------------------------------------------------------------
 -- 9) LOBBY STATE HANDLERS
 --------------------------------------------------------------------------------
-RegisterNetEvent('dps-roxwoodracing:setLobbyState', function(state)
+RegisterNetEvent('dps-proracing:setLobbyState', function(state)
     hasLobby = state
     if not state then currentLobby, lobbyOwner = nil, nil end
 end)
-RegisterNetEvent('dps-roxwoodracing:updateLobbyInfo', function(info)
+RegisterNetEvent('dps-proracing:updateLobbyInfo', function(info)
     if inRace then
         -- Don't show lobby window during a race
         return
@@ -449,7 +449,7 @@ end)
 -- 10) CREATE / JOIN / START / LEAVE
 -- Ensure lobby info is requested on player spawn/login
 AddEventHandler('playerSpawned', function()
-    local lobbies = lib.callback.await("dps-roxwoodracing:getLobbies", true)
+    local lobbies = lib.callback.await("dps-proracing:getLobbies", true)
     if lobbies and #lobbies > 0 then
         -- If there are lobbies, update local state so join option is available
         hasLobby = true
@@ -466,7 +466,7 @@ function GetMyVehicleInfo()
     return { netId = NetworkGetNetworkIdFromEntity(veh), plate = GetVehicleNumberPlateText(veh), class = GetVehicleClass(veh) }
 end
 
-RegisterNetEvent('dps-roxwoodracing:client:createLobby', function()
+RegisterNetEvent('dps-proracing:client:createLobby', function()
     if hasLobby then Notify(Locale("lobby_exists"), "", "error") return end
     local modePick = lib.inputDialog(Locale("create_lobby"), {
         { type = 'select', label = Locale("select_mode"), required = true, default = 'spec',
@@ -480,14 +480,14 @@ RegisterNetEvent('dps-roxwoodracing:client:createLobby', function()
     local mode, laps, track = modePick[1], tonumber(modePick[2]) or 3, modePick[3]
     local args = { track = track, laps = laps, mode = mode }
     if mode == 'open' then
-        local classes = lib.callback.await('dps-roxwoodracing:getOpenClasses', false)
+        local classes = lib.callback.await('dps-proracing:getOpenClasses', false)
         local pick = lib.inputDialog(Locale("mode_open"), { { type = 'select', label = Locale("select_open_class"), required = true, default = 'Any', options = classes } })
         if not pick then return end
         args.class = pick[1]
         args.vehicle = GetMyVehicleInfo()
         if not args.vehicle then Notify(Config.Job.label, Locale("open_need_vehicle"), "error") return end
     else
-        local cat = lib.callback.await('dps-roxwoodracing:getSpecCatalogue', false)
+        local cat = lib.callback.await('dps-proracing:getSpecCatalogue', false)
         local classOpts, tuneOpts = {}, {}
         for _, key in ipairs(cat.order) do classOpts[#classOpts+1] = { value = key, label = cat.classes[key].label } end
         for _, key in ipairs(Config.TuneOrder) do tuneOpts[#tuneOpts+1] = { value = key, label = Config.Tune[key].label } end
@@ -502,11 +502,11 @@ RegisterNetEvent('dps-roxwoodracing:client:createLobby', function()
     local safeName = rawName:gsub("[^%w_]", "_"):sub(1, 30)
     if safeName == "" then safeName = "Racer" end
     args.name = safeName .. "_" .. math.random(1000, 9999)
-    TriggerServerEvent("dps-roxwoodracing:createLobby", args)
+    TriggerServerEvent("dps-proracing:createLobby", args)
 end)
 
-RegisterNetEvent('dps-roxwoodracing:client:joinLobby', function()
-    local lobbies = lib.callback.await("dps-roxwoodracing:getLobbies", true)
+RegisterNetEvent('dps-proracing:client:joinLobby', function()
+    local lobbies = lib.callback.await("dps-proracing:getLobbies", true)
     if not lobbies or #lobbies == 0 then
         Notify(Locale("no_lobbies"), "", "error")
         return
@@ -524,11 +524,11 @@ RegisterNetEvent('dps-roxwoodracing:client:joinLobby', function()
                 if not vehicle then Notify(Config.Job.label, Locale("open_need_vehicle"), "error") return end
             end
         end
-        TriggerServerEvent("dps-roxwoodracing:joinLobby", chosen, vehicle)
+        TriggerServerEvent("dps-proracing:joinLobby", chosen, vehicle)
     end
 end)
 
-RegisterNetEvent('dps-roxwoodracing:client:startRace', function()
+RegisterNetEvent('dps-proracing:client:startRace', function()
     if lobbyOwner ~= GetPlayerServerId(PlayerId()) then
         Notify("", Locale("not_authorized_to_start_race"), "error")
         return
@@ -536,7 +536,7 @@ RegisterNetEvent('dps-roxwoodracing:client:startRace', function()
     -- Hide lobby preview for the host immediately
     HideLobbyDisplay()
     CloseVehicleSelectionUI()
-    local players = lib.callback.await("dps-roxwoodracing:getLobbyPlayers", false, currentLobby)
+    local players = lib.callback.await("dps-proracing:getLobbyPlayers", false, currentLobby)
     local names   = {}
     for _, sid in ipairs(players) do
         local pid   = GetPlayerFromServerId(sid)
@@ -545,11 +545,11 @@ RegisterNetEvent('dps-roxwoodracing:client:startRace', function()
     end
     Notify(Locale("lobby_preview"), table.concat(names, "\n"), "inform", 10000)
     -- No ox_lib context menu to close; lobby window is native
-    TriggerServerEvent("dps-roxwoodracing:startRace", currentLobby)
+    TriggerServerEvent("dps-proracing:startRace", currentLobby)
 end)
 
 -- Hide lobby preview for all players on server signal
-RegisterNetEvent('dps-roxwoodracing:hideLobbyWindow', function()
+RegisterNetEvent('dps-proracing:hideLobbyWindow', function()
     HideLobbyDisplay()
     CloseVehicleSelectionUI()
     -- Ensure interact mode is off
@@ -561,7 +561,7 @@ end)
 -- Vehicle selection countdown overlay
 local selectCountdownActive = false
 
-RegisterNetEvent("dps-roxwoodracing:vehicleSelectCountdown", function(remaining)
+RegisterNetEvent("dps-proracing:vehicleSelectCountdown", function(remaining)
     selectCountdownActive = remaining and remaining > 0
     Hud.SelectCountdown(selectCountdownActive and remaining or nil)
     if selectCountdownActive == false then
@@ -570,7 +570,7 @@ RegisterNetEvent("dps-roxwoodracing:vehicleSelectCountdown", function(remaining)
 end)
 
 -- If race proceeds, ensure countdown hides
-AddEventHandler("dps-roxwoodracing:prepareStart", function()
+AddEventHandler("dps-proracing:prepareStart", function()
     selectCountdownActive = false
     Hud.SelectCountdown(nil)
     CloseVehicleSelectionUI()
@@ -578,7 +578,7 @@ end)
 
 
 -- Notify if kicked due to timeout
-RegisterNetEvent("dps-roxwoodracing:kickedFromLobby", function(lobbyName, reason)
+RegisterNetEvent("dps-proracing:kickedFromLobby", function(lobbyName, reason)
     hasLobby, currentLobby, lobbyOwner = false, nil, nil
     HideLobbyDisplay()
     CloseVehicleSelectionUI()
@@ -614,34 +614,34 @@ speedwaySuppressAutoUntilAltUp = false
 
 -- Removed Alt long-press simulated targeting loop; use F6 toggle for reliable interaction
 
-RegisterNetEvent('dps-roxwoodracing:client:leaveLobby', function()
+RegisterNetEvent('dps-proracing:client:leaveLobby', function()
     if not hasLobby then
         Notify(Locale("no_lobby_joined"), Locale("no_lobby_joined_desc"), "error")
         return
     end
-    TriggerServerEvent("dps-roxwoodracing:leaveLobby", currentLobby)
+    TriggerServerEvent("dps-proracing:leaveLobby", currentLobby)
 end)
 
 --------------------------------------------------------------------------------
 -- 11) VEHICLE SELECTION
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:chooseVehicle", function(lobbyName, classKey)
-    local cat = lib.callback.await('dps-roxwoodracing:getSpecCatalogue', false)
+RegisterNetEvent("dps-proracing:chooseVehicle", function(lobbyName, classKey)
+    local cat = lib.callback.await('dps-proracing:getSpecCatalogue', false)
     local cls = cat and cat.classes[classKey] or (cat and cat.classes.All)
     local opts = {}
     for _, v in ipairs(cls and cls.vehicles or {}) do opts[#opts+1] = { value = v.model, label = v.label } end
-    if #opts == 0 then TriggerServerEvent("dps-roxwoodracing:selectedVehicle", lobbyName, nil) return end
+    if #opts == 0 then TriggerServerEvent("dps-proracing:selectedVehicle", lobbyName, nil) return end
     local dialog = lib.inputDialog(Locale("choose_vehicle_title"), {
         { type = 'select', label = Locale("choose_vehicle_label"), required = true, options = opts, default = opts[1].value, searchable = true },
     })
     local sel = dialog and dialog[1] or nil
-    TriggerServerEvent("dps-roxwoodracing:selectedVehicle", lobbyName, sel)
+    TriggerServerEvent("dps-proracing:selectedVehicle", lobbyName, sel)
 end)
 
 --------------------------------------------------------------------------------
 -- 12) PREPARE & START THE RACE (SPAWN + COUNTDOWN)
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
+RegisterNetEvent("dps-proracing:prepareStart", function(data)
     -- Hide lobby preview window for everyone once the race is about to start
     HideLobbyDisplay()
     -- Stop vehicle selection countdown if showing
@@ -653,7 +653,7 @@ RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
     totalLaps    = tonumber(data.laps) or totalLaps or 1
 
     -- clear old props (this also hides the HUD, so the HUD is shown after it)
-    TriggerEvent("dps-roxwoodracing:client:destroyprops")
+    TriggerEvent("dps-proracing:client:destroyprops")
     inRace = true
     Hud.ShowRace(0, 0, 1, totalLaps)
 
@@ -682,7 +682,7 @@ RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
             onEnter = function()
                 if idx == racerCheckpointIndex + 1 then
                     racerCheckpointIndex = idx
-                    TriggerServerEvent("dps-roxwoodracing:checkpointPassed", currentLobby, idx)
+                    TriggerServerEvent("dps-proracing:checkpointPassed", currentLobby, idx)
                 end
             end
         })
@@ -698,7 +698,7 @@ RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
         onEnter = function()
             if racerCheckpointIndex == #Config.Checkpoints[data.track] then
                 racerCheckpointIndex = 0
-                TriggerServerEvent("dps-roxwoodracing:lapPassed", currentLobby)
+                TriggerServerEvent("dps-proracing:lapPassed", currentLobby)
             end
         end
     })
@@ -713,8 +713,8 @@ RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
           if GetGameTimer() > deadline then
             Notify(Config.Job.label, "Vehicle failed to spawn. Please try again.", "error", 5000)
             inRace = false
-            TriggerEvent("dps-roxwoodracing:client:destroyprops")
-            TriggerServerEvent("dps-roxwoodracing:spawnFailed", currentLobby)
+            TriggerEvent("dps-proracing:client:destroyprops")
+            TriggerServerEvent("dps-proracing:spawnFailed", currentLobby)
             return
           end
           Wait(0)
@@ -724,8 +724,8 @@ RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
           if GetGameTimer() > deadline then
             Notify(Config.Job.label, "Vehicle failed to spawn. Please try again.", "error", 5000)
             inRace = false
-            TriggerEvent("dps-roxwoodracing:client:destroyprops")
-            TriggerServerEvent("dps-roxwoodracing:spawnFailed", currentLobby)
+            TriggerEvent("dps-proracing:client:destroyprops")
+            TriggerServerEvent("dps-proracing:spawnFailed", currentLobby)
             return
           end
           Wait(0)
@@ -872,7 +872,7 @@ RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
                     if Config.DebugPrints then
                         print(("[DEBUG] updateProgress dist=%.2f lobby=%s"):format(dist, tostring(currentLobby)))
                     end
-                    TriggerServerEvent("dps-roxwoodracing:updateProgress", currentLobby, dist)
+                    TriggerServerEvent("dps-proracing:updateProgress", currentLobby, dist)
                 end
                 Wait(Config.ProgressTickMs or 200)
             end
@@ -881,7 +881,7 @@ RegisterNetEvent("dps-roxwoodracing:prepareStart", function(data)
 end)
 
 -- Cleanup: remove spawned props and any active checkpoint/finish zones
-RegisterNetEvent("dps-roxwoodracing:client:destroyprops", function()
+RegisterNetEvent("dps-proracing:client:destroyprops", function()
     Hud.HideRace()
     Pit.Disarm()
     -- End ghosting
@@ -904,14 +904,14 @@ RegisterNetEvent("dps-roxwoodracing:client:destroyprops", function()
     currentZones = {}
 end)
 
-RegisterNetEvent("dps-roxwoodracing:youFinished", function()
+RegisterNetEvent("dps-proracing:youFinished", function()
     Notify(Config.Job.label, Locale("you_finished"), "success", 5000)
 end)
 
 --------------------------------------------------------------------------------
 -- 14) FINAL RANKING
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:finalRanking", function(data)
+RegisterNetEvent("dps-proracing:finalRanking", function(data)
     local results = data.allResults or {}
 
     -- If ResultsUI is enabled and we have expanded results, use NUI
@@ -966,7 +966,7 @@ end)
 --------------------------------------------------------------------------------
 -- 15) FINISH TELEPORT
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:client:finishTeleport", function(coords, keepVehicle)
+RegisterNetEvent("dps-proracing:client:finishTeleport", function(coords, keepVehicle)
     inRace = false
     Hud.HideRace()
     Ghost.Stop()
@@ -1003,12 +1003,12 @@ end)
 -- Use globals so values set during prepareStart are reflected here too
 currentLap, totalLaps = currentLap or 1, totalLaps or 1
 
-RegisterNetEvent("dps-roxwoodracing:updateLap", function(cur, tot)
+RegisterNetEvent("dps-proracing:updateLap", function(cur, tot)
     currentLap, totalLaps = cur, tot
     Hud.UpdateLap(cur, tot)
 end)
 
-RegisterNetEvent("dps-roxwoodracing:updatePosition", function(position, total)
+RegisterNetEvent("dps-proracing:updatePosition", function(position, total)
     myPosition = position
     totalRacers = total
     Hud.UpdatePosition(position, total)
@@ -1021,7 +1021,7 @@ end)
 --------------------------------------------------------------------------------
 -- REWARD NOTIFICATIONS
 --------------------------------------------------------------------------------
-RegisterNetEvent('dps-roxwoodracing:client:rewardNotify', function(data)
+RegisterNetEvent('dps-proracing:client:rewardNotify', function(data)
     if data.positionPayout and data.positionPayout > 0 then
         Notify(Config.Job.label, Locale("reward_cash", data.positionPayout, data.positionLabel or ""), "success", 5000)
     end
@@ -1042,7 +1042,7 @@ end)
 --------------------------------------------------------------------------------
 -- STATS DISPLAY
 --------------------------------------------------------------------------------
-RegisterNetEvent('dps-roxwoodracing:client:statsNotify', function(data)
+RegisterNetEvent('dps-proracing:client:statsNotify', function(data)
     if data.newRecord then
         Notify(Config.Job.label, Locale("stats_new_record", string.format("%.1f", data.newRecord / 1000)), "success", 6000)
     end
@@ -1054,7 +1054,7 @@ end)
 
 -- /racestats command to view personal stats
 RegisterCommand('racestats', function()
-    local stats = lib.callback.await('dps-roxwoodracing:getPlayerStats', false)
+    local stats = lib.callback.await('dps-proracing:getPlayerStats', false)
     if not stats then
         Notify(Config.Job.label, "No stats found.", "error", 3000)
         return
@@ -1075,7 +1075,7 @@ end, false)
 --------------------------------------------------------------------------------
 local function openControl()
   if not Bridge.HasJob(Config.Job.name, Config.Job.grades.marshal) then Notify(Config.Job.label, Locale('staff_only'), 'error') return end
-  local snap = lib.callback.await('dps-roxwoodracing:staff:snapshot', false)
+  local snap = lib.callback.await('dps-proracing:staff:snapshot', false)
   if not snap then return end
   local options = {}
   for _, l in ipairs(snap.lobbies) do
@@ -1083,30 +1083,30 @@ local function openControl()
       onSelect = function()
         local pick = lib.inputDialog(l.name, { { type = 'select', label = 'Action', required = true, options = { { value = 'endRace', label = 'End race' }, { value = 'names', label = 'Sign: names' }, { value = 'toggle', label = 'Sign: names + times' } } } })
         if not pick then return end
-        if pick[1] == 'endRace' then TriggerServerEvent('dps-roxwoodracing:staff:action', 'endRace', { lobby = l.name })
-        else TriggerServerEvent('dps-roxwoodracing:staff:action', 'signMode', { lobby = l.name, mode = pick[1] }) end
+        if pick[1] == 'endRace' then TriggerServerEvent('dps-proracing:staff:action', 'endRace', { lobby = l.name })
+        else TriggerServerEvent('dps-proracing:staff:action', 'signMode', { lobby = l.name, mode = pick[1] }) end
       end }
   end
-  options[#options+1] = { title = 'Clear track props', icon = 'broom', onSelect = function() TriggerServerEvent('dps-roxwoodracing:staff:action', 'clearProps') end }
+  options[#options+1] = { title = 'Clear track props', icon = 'broom', onSelect = function() TriggerServerEvent('dps-proracing:staff:action', 'clearProps') end }
   if Bridge.HasJob(Config.Job.name, Config.Job.grades.director) then
     options[#options+1] = { title = ('Account balance: $%s'):format(snap.balance), description = ('Purse source: %s'):format(snap.purseSource), disabled = true }
     local fields = { { 'entryfee', 'Entry fee' }, { 'payout1', '1st place' }, { 'payout2', '2nd place' }, { 'payout3', '3rd place' }, { 'showup', 'Show-up bonus' }, { 'bestlap', 'Fastest lap bonus' } }
     for _, f in ipairs(fields) do
       options[#options+1] = { title = ('%s: $%s'):format(f[2], snap[f[1]]), onSelect = function()
         local v = lib.inputDialog(f[2], { { type = 'number', label = 'Amount', default = snap[f[1]], min = 0 } })
-        if v and v[1] then TriggerServerEvent('dps-roxwoodracing:staff:action', 'setSetting', { key = f[1], value = v[1] }) end
+        if v and v[1] then TriggerServerEvent('dps-proracing:staff:action', 'setSetting', { key = f[1], value = v[1] }) end
       end }
     end
   end
-  lib.registerContext({ id = 'dps_roxwoodracing_control', title = Locale('raceway_control'), options = options })
-  lib.showContext('dps_roxwoodracing_control')
+  lib.registerContext({ id = 'dps_proracing_control', title = Locale('raceway_control'), options = options })
+  lib.showContext('dps_proracing_control')
 end
-RegisterNetEvent('dps-roxwoodracing:client:openControl', openControl)
+RegisterNetEvent('dps-proracing:client:openControl', openControl)
 RegisterCommand('raceway', openControl, false)
 
 -- Multichar switch / logout: drop every bit of lobby and race state so it cannot leak onto the next character.
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
-    TriggerEvent("dps-roxwoodracing:client:destroyprops")
+    TriggerEvent("dps-proracing:client:destroyprops")
     inRace = false
     hasLobby, currentLobby, lobbyOwner = false, nil, nil
     myRaceVeh = nil

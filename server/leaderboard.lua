@@ -21,7 +21,7 @@ local function showPlayerTimes(title, times)
     CurrentDisplayType = "setPlayerTimes"
     CurrentDisplayLines = times
     CurrentDisplayTitle = title
-    TriggerClientEvent("dps-roxwoodracing:setPlayerTimes", -1, title, times)
+    TriggerClientEvent("dps-proracing:setPlayerTimes", -1, title, times)
 end
 AddEventHandler("amir-leaderboard:setPlayerTimes", showPlayerTimes)
 
@@ -29,7 +29,7 @@ local function showPlayerNames(title, names)
     CurrentDisplayType = "setPlayerNames"
     CurrentDisplayLines = names
     CurrentDisplayTitle = title
-    TriggerClientEvent("dps-roxwoodracing:setPlayerNames", -1, title, names)
+    TriggerClientEvent("dps-proracing:setPlayerNames", -1, title, names)
 end
 AddEventHandler("amir-leaderboard:setPlayerNames", showPlayerNames)
 
@@ -37,24 +37,24 @@ local function showText(title, lines)
     CurrentDisplayType = "setText"
     CurrentDisplayLines = lines
     CurrentDisplayTitle = title
-    TriggerClientEvent("dps-roxwoodracing:setText", -1, title, lines)
+    TriggerClientEvent("dps-proracing:setText", -1, title, lines)
 end
 AddEventHandler("amir-leaderboard:setText", showText)
 
 local function setAdUrls(ad1, ad2, ad3)
     CurrentDisplayAdUrls = { ad1, ad2, ad3 }
-    TriggerClientEvent("dps-roxwoodracing:setAdUrls", -1, CurrentDisplayAdUrls)
+    TriggerClientEvent("dps-proracing:setAdUrls", -1, CurrentDisplayAdUrls)
 end
 AddEventHandler("amir-leaderboard:setAdUrls", setAdUrls)
 
 --------------------------------------------------------------------------------
 -- Late-join data push
 --------------------------------------------------------------------------------
-RegisterServerEvent("dps-roxwoodracing:requestData")
-AddEventHandler("dps-roxwoodracing:requestData", function()
+RegisterServerEvent("dps-proracing:requestData")
+AddEventHandler("dps-proracing:requestData", function()
     local src = source
-    TriggerClientEvent("dps-roxwoodracing:" .. CurrentDisplayType, src, CurrentDisplayTitle, CurrentDisplayLines)
-    TriggerClientEvent("dps-roxwoodracing:setAdUrls", src, CurrentDisplayAdUrls)
+    TriggerClientEvent("dps-proracing:" .. CurrentDisplayType, src, CurrentDisplayTitle, CurrentDisplayLines)
+    TriggerClientEvent("dps-proracing:setAdUrls", src, CurrentDisplayAdUrls)
 end)
 
 --------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ local function ShowIdleLeaderboard()
 end
 
 -- A new track record was saved: refresh the idle board once (no race running)
-AddEventHandler('dps-roxwoodracing:recordSet', function()
+AddEventHandler('dps-proracing:recordSet', function()
     if not idleStopFlag and not idleRunning then ShowIdleLeaderboard() end
 end)
 

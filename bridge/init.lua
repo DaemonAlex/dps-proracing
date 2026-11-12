@@ -15,4 +15,4 @@ function Bridge.Detect()
 end
 
 Bridge.Framework = Bridge.Detect()
-print(('[dps-roxwoodracing] framework: %s'):format(Bridge.Framework or 'none'))
+print(('[dps-proracing] framework: %s'):format(Bridge.Framework or 'none'))

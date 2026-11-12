@@ -3,7 +3,7 @@
 local cfg = Config.Practice and Config.Practice.pitCars or {}
 local spawned, point, near = {}, nil, false
 
-local function log(msg) print('[dps-roxwoodracing] pitcars: ' .. msg) end
+local function log(msg) print('[dps-proracing] pitcars: ' .. msg) end
 
 local function loadModel(hash, ms)
   if not IsModelValid(hash) then return nil end
@@ -51,7 +51,7 @@ end
 
 local function arm()
   if point then point:remove(); point = nil end
-  local rows = lib.callback.await('dps-roxwoodracing:pitcar:list', false)
+  local rows = lib.callback.await('dps-proracing:pitcar:list', false)
   if type(rows) ~= 'table' or #rows == 0 then despawn() return end
   local c, r = Practice.Extent(rows)
   point = lib.points.new({
@@ -69,8 +69,8 @@ CreateThread(function()
   arm()
 end)
 
-RegisterNetEvent('dps-roxwoodracing:pitcar:changed', function() arm() end)
-RegisterNetEvent('dps-roxwoodracing:pitcar:result', function(ok, msg)
+RegisterNetEvent('dps-proracing:pitcar:changed', function() arm() end)
+RegisterNetEvent('dps-proracing:pitcar:result', function(ok, msg)
   Notify(Config.Job.label, msg, ok and 'success' or 'error', 6000)
 end)
 
@@ -80,7 +80,7 @@ RegisterCommand('pitcar', function(_, args)
     log('refused: not a Race Director on this client')
     Notify(Config.Job.label, Locale('staff_only'), 'error') return
   end
-  if args[1] == 'clear' then TriggerServerEvent('dps-roxwoodracing:pitcar:clear') return end
+  if args[1] == 'clear' then TriggerServerEvent('dps-proracing:pitcar:clear') return end
   local ped = PlayerPedId()
   local veh = GetVehiclePedIsIn(ped, false)
   local model, ent
@@ -97,7 +97,7 @@ RegisterCommand('pitcar', function(_, args)
   end
   local c = GetEntityCoords(ent)
   log(('sending %s at %.1f %.1f %.1f'):format(model:lower(), c.x, c.y, c.z))
-  TriggerServerEvent('dps-roxwoodracing:pitcar:add', model:lower(), c.x, c.y, c.z, GetEntityHeading(ent))
+  TriggerServerEvent('dps-proracing:pitcar:add', model:lower(), c.x, c.y, c.z, GetEntityHeading(ent))
 end, false)
 
 AddEventHandler('onResourceStop', function(res)

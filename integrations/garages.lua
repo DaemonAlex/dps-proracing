@@ -2,7 +2,7 @@
 -- otherwise the stock qb/qbx 'garage' column.
 Garages = {}
 Garages.Provider = (GetResourceState('jg-advancedgarages') == 'started' or GetResourceState('jg-advancedgarages') == 'starting') and 'jg-advancedgarages' or 'none'
-print(('[dps-roxwoodracing] garages: %s'):format(Garages.Provider))
+print(('[dps-proracing] garages: %s'):format(Garages.Provider))
 
 function Garages.GiveVehicle(pid, model, plate)
   local cid = Bridge.GetPlayerIdentifier(pid)

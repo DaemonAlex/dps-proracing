@@ -1,24 +1,24 @@
-# dps-roxwoodracing Port Implementation Plan
+# dps-proracing Port Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn rox_speedway v2.4.2 into `dps-roxwoodracing`: a [dps]-shaped FiveM resource with a `roxwoodracing` job, society money through Renewed-Banking, autosensed vendor integrations, Spec and Open lobby modes with tune presets, and zero scan loops.
+**Goal:** Turn rox_speedway v2.4.2 into `dps-proracing`: a [dps]-shaped FiveM resource with a `proracing` job, society money through Renewed-Banking, autosensed vendor integrations, Spec and Open lobby modes with tune presets, and zero scan loops.
 
 **Architecture:** Port, don't rewrite. Existing lobby/race/ranking/ghost/pit code moves file-by-file into `bridge/`, `integrations/`, `config/`, `client/`, `server/`. Every vendor call goes through one integration file with a detect-at-boot + fallback. Pure logic (validation, ranking sort, payout maths, plate generation, stats merge) is extracted into `shared/` modules that run under plain Lua 5.4 so they can be unit-tested off-server.
 
 **Tech Stack:** FiveM (cerulean, lua54), ox_lib 3.39 (`lib.zones`, `lib.points`, `lib.callback`, `lib.inputDialog`, `lib.registerContext`, `lib.notify`), oxmysql, qbx_core (native exports, no GetCoreObject), Renewed-Banking, qbx_management, wasabi_carlock, ox_fuel, ox_target, jg-advancedgarages. Tests: Lua 5.4 on the fivem VM (`/usr/bin/lua5.4`), a tiny in-repo runner.
 
-**Spec:** `docs/superpowers/specs/2026-09-05-roxwoodracing-design.md`
+**Spec:** `docs/superpowers/specs/2026-09-05-proracing-design.md`
 
 ## Global Constraints
 
-- Resource name is exactly `dps-roxwoodracing`; event/callback prefix is exactly `dps-roxwoodracing:`; no `speedway:` or `rox_speedway:` string may remain in Lua/HTML/JS.
-- Job name is exactly `roxwoodracing`; society account name = job name.
+- Resource name is exactly `dps-proracing`; event/callback prefix is exactly `dps-proracing:`; no `speedway:` or `rox_speedway:` string may remain in Lua/HTML/JS.
+- Job name is exactly `proracing`; society account name = job name.
 - No `while true do Wait(0)` and no periodic entity scans. Per-frame threads may exist only while a bounded activity is happening (countdown, ghost collision loop during a race, pit sequence) and must end with it.
 - Vendor names appear only inside `integrations/*.lua` and `bridge/*.lua`.
 - Payouts: podium 5000/3000/1500, best lap 1000, show-up 500; pool split 60/30/10; default `Economy.purseSource = 'society'`.
 - Tune presets: Stock = no mods; Street = engine 2, brakes 2, gearbox 2; Race = max engine/brakes/gearbox + turbo.
-- Stats table is `dps_roxwoodracing_stats`; first boot renames `speedway_stats` if present.
+- Stats table is `dps_proracing_stats`; first boot renames `speedway_stats` if present.
 - Track keys `Short_Track`, `Drift_Track`, `Speed_Track`, `Long_Track` are unchanged.
 - Brand accent in NUI is `#ff7a45`.
 - Git: work on branch `port-to-dps`, plain commit messages, **no attribution footers**, never push to `main`.
@@ -29,7 +29,7 @@
 ## File Structure (final)
 
 ```
-dps-roxwoodracing/
+dps-proracing/
   fxmanifest.lua
   shared/
     locale.lua          Locale(key, ...) from locales/en.lua           [new]
@@ -75,10 +75,10 @@ All modules are plain globals (FiveM resources share one Lua state per side). Sh
 **Interfaces:**
 - Produces: `tools/check.sh` (syntax-checks every `.lua` with `luac5.4 -p`, then runs `tests/run.lua`); `tests/stubs.lua` (fake `GetResourceState`, `exports`, `MySQL`, `TriggerClientEvent`, `GetGameTimer`, `print` capture) used by every later test.
 
-The repo clone lives at `~/scratch/dps-roxwoodracing` on the fivem VM (`ssh debian@10.10.10.10`). All check/test commands run there. Local edits sync with:
+The repo clone lives at `~/scratch/dps-proracing` on the fivem VM (`ssh debian@10.10.10.10`). All check/test commands run there. Local edits sync with:
 
 ```bash
-rsync -a --delete --exclude .git /tmp/claude-0/-root--claude/a3d464a8-3f74-4f09-9821-2824549c42de/scratchpad/rox_speedway/ debian@10.10.10.10:~/scratch/dps-roxwoodracing/
+rsync -a --delete --exclude .git /tmp/claude-0/-root--claude/a3d464a8-3f74-4f09-9821-2824549c42de/scratchpad/rox_speedway/ debian@10.10.10.10:~/scratch/dps-proracing/
 ```
 
 - [ ] **Step 1: Write the runner**
@@ -114,8 +114,8 @@ os.exit(failed == 0 and 0 or 1)
 -- Stubs for FiveM globals so shared/ and pure server modules load under lua5.4.
 STUB = { started = {}, clientEvents = {}, queries = {}, prints = {} }
 function GetResourceState(name) return STUB.started[name] and 'started' or 'missing' end
-function GetCurrentResourceName() return 'dps-roxwoodracing' end
-function GetInvokingResource() return 'dps-roxwoodracing' end
+function GetCurrentResourceName() return 'dps-proracing' end
+function GetInvokingResource() return 'dps-proracing' end
 function GetGameTimer() return STUB.now or 0 end
 function GetPlayerName(pid) return 'Rockstar' .. tostring(pid) end
 function TriggerClientEvent(name, target, ...) STUB.clientEvents[#STUB.clientEvents+1] = { name = name, target = target, args = { ... } } end
@@ -170,7 +170,7 @@ lua5.4 tests/run.lua
 
 Run (local): the rsync line above. Then:
 ```bash
-ssh debian@10.10.10.10 'cd ~/scratch/dps-roxwoodracing && chmod +x tools/check.sh && ./tools/check.sh'
+ssh debian@10.10.10.10 'cd ~/scratch/dps-proracing && chmod +x tools/check.sh && ./tools/check.sh'
 ```
 Expected: `syntax ok`, then `1 passed, 0 failed`.
 
@@ -191,7 +191,7 @@ git commit -m "Add lua5.4 test runner, stubs and syntax gate"
 - Delete: `locales/de.lua locales/es.lua locales/fr.lua locales/ru.lua`, `NOTES.md`
 
 **Interfaces:**
-- Produces: the new tree; every event string prefixed `dps-roxwoodracing:`.
+- Produces: the new tree; every event string prefixed `dps-proracing:`.
 
 - [ ] **Step 1: git mv everything**
 
@@ -222,13 +222,13 @@ rmdir client/nui leaderboard 2>/dev/null || true
 
 ```bash
 grep -rl --include='*.lua' --include='*.html' --include='*.js' -e 'speedway:' -e 'rox_speedway' . | grep -v '^./.git/' | xargs sed -i \
-  -e 's/rox_speedway:/dps-roxwoodracing:/g' \
-  -e 's/speedway:/dps-roxwoodracing:/g' \
-  -e "s/exports\['rox_speedway'\]/exports['dps-roxwoodracing']/g" \
-  -e 's#nui://rox_speedway/leaderboard/speedway.html#nui://dps-roxwoodracing/html/led.html#g' \
-  -e "s/|| 'rox_speedway'/|| 'dps-roxwoodracing'/g" \
-  -e 's/\[ROX-Speedway\]/[dps-roxwoodracing]/g' \
-  -e 's/\[Speedway\]/[dps-roxwoodracing]/g'
+  -e 's/rox_speedway:/dps-proracing:/g' \
+  -e 's/speedway:/dps-proracing:/g' \
+  -e "s/exports\['rox_speedway'\]/exports['dps-proracing']/g" \
+  -e 's#nui://rox_speedway/leaderboard/speedway.html#nui://dps-proracing/html/led.html#g' \
+  -e "s/|| 'rox_speedway'/|| 'dps-proracing'/g" \
+  -e 's/\[ROX-Speedway\]/[dps-proracing]/g' \
+  -e 's/\[Speedway\]/[dps-proracing]/g'
 grep -rn -e 'speedway:' -e 'rox_speedway' --include='*.lua' --include='*.html' --include='*.js' . | grep -v '^./.git/' ; echo "exit=$? (1 means clean)"
 ```
 Expected: the final grep prints nothing (`exit=1`). Note: `amir-leaderboard:*` local event names stay; they are internal.
@@ -240,7 +240,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-name 'dps-roxwoodracing'
+name 'dps-proracing'
 author 'DPS Development (base: max_rox_speedway by MaxSuperTech, rox_speedway by DrCannabis/DaemonAlex)'
 description 'Roxwood Raceway: lobbies, Spec and Open races, pit crews, LED leaderboard, society-funded purses'
 version '3.0.0'
@@ -314,12 +314,12 @@ Expected: `exit=1`.
 
 - [ ] **Step 5: Sync, syntax gate, commit**
 
-Run the rsync, then `ssh debian@10.10.10.10 'cd ~/scratch/dps-roxwoodracing && ./tools/check.sh'`.
+Run the rsync, then `ssh debian@10.10.10.10 'cd ~/scratch/dps-proracing && ./tools/check.sh'`.
 Expected: `syntax ok`, `1 passed, 0 failed`.
 
 ```bash
 git add -A
-git commit -m "Rename to dps-roxwoodracing and move files into the [dps] layout"
+git commit -m "Rename to dps-proracing and move files into the [dps] layout"
 ```
 
 ---
@@ -349,7 +349,7 @@ TEST('config files load and expose the split tables', function()
   EQ(Config.Economy.purseSource, 'society')
   EQ(Config.Economy.payouts[1], 5000)
   EQ(Config.Economy.poolSplit[1], 60)
-  EQ(Config.Job.name, 'roxwoodracing')
+  EQ(Config.Job.name, 'proracing')
   EQ(Config.Job.grades.director, 2)
   EQ(Config.Tune.Street.mods[11], 2)
   TRUTHY(Config.OpenClasses.Any, 'open classes')
@@ -411,7 +411,7 @@ Config.SpecClassLabels = {
 Append to `config/economy.lua`:
 ```lua
 Config.Job = {
-  name   = 'roxwoodracing',
+  name   = 'proracing',
   label  = 'Roxwood Raceway',
   grades = { marshal = 0, pitcrew = 1, director = 2, owner = 3 },
   -- Boss menu zone at the paddock office (next to the lobby ped)
@@ -517,7 +517,7 @@ TEST('qbx money and job go through exports.qbx_core:GetPlayer', function()
   local bal = 5000
   local fakePlayer = {
     PlayerData = { citizenid = 'ABC123', charinfo = { firstname = 'Sam', lastname = 'Rider' },
-                   job = { name = 'roxwoodracing', grade = { level = 2 }, isboss = false } },
+                   job = { name = 'proracing', grade = { level = 2 }, isboss = false } },
     Functions = {
       AddMoney = function(_, mtype, amount) bal = bal + amount; return true end,
       RemoveMoney = function(_, mtype, amount) if bal < amount then return false end bal = bal - amount; return true end,
@@ -532,8 +532,8 @@ TEST('qbx money and job go through exports.qbx_core:GetPlayer', function()
   TRUTHY(Bridge.RemoveMoney(7, 'cash', 1000, 'test')); EQ(Bridge.GetMoney(7, 'cash'), 4000)
   FALSY(Bridge.RemoveMoney(7, 'cash', 99999, 'test'))
   TRUTHY(Bridge.AddMoney(7, 'cash', 10, 'test')); EQ(bal, 4010)
-  EQ(Bridge.GetJob(7).name, 'roxwoodracing'); EQ(Bridge.GetJob(7).grade, 2)
-  TRUTHY(Bridge.HasJob(7, 'roxwoodracing', 2)); FALSY(Bridge.HasJob(7, 'roxwoodracing', 3)); FALSY(Bridge.HasJob(7, 'police', 0))
+  EQ(Bridge.GetJob(7).name, 'proracing'); EQ(Bridge.GetJob(7).grade, 2)
+  TRUTHY(Bridge.HasJob(7, 'proracing', 2)); FALSY(Bridge.HasJob(7, 'proracing', 3)); FALSY(Bridge.HasJob(7, 'police', 0))
   FALSY(Bridge.GetPlayerIdentifier(8), 'offline player')
 end)
 
@@ -543,7 +543,7 @@ TEST('no framework -> nil framework and safe returns', function()
   EQ(Bridge.Framework, nil)
   EQ(Bridge.GetPlayerIdentifier(1), nil)
   EQ(Bridge.GetMoney(1, 'cash'), 0)
-  FALSY(Bridge.HasJob(1, 'roxwoodracing', 0))
+  FALSY(Bridge.HasJob(1, 'proracing', 0))
 end)
 ```
 
@@ -569,7 +569,7 @@ function Bridge.Detect()
 end
 
 Bridge.Framework = Bridge.Detect()
-print(('[dps-roxwoodracing] framework: %s'):format(Bridge.Framework or 'none'))
+print(('[dps-proracing] framework: %s'):format(Bridge.Framework or 'none'))
 ```
 
 - [ ] **Step 4: Rewrite bridge/server.lua**
@@ -762,7 +762,7 @@ git commit -m "Bridge: qbx-first detection, job lookups, shared client/server AP
 
 **Interfaces:**
 - Produces: `Notify(title, desc, ntype, ms)` (replaces `SpeedwayNotify`), `Target.AddPed(ped, options)` where `options` is an ox_target option list `{ {name, label, icon, event, canInteract, distance}, ... }`, `Keys.Give(veh, plate)`, `Fuel.SetFull(veh)`, `Fuel.Set(veh, level)`.
-- All four print one `[dps-roxwoodracing] <thing>: <vendor>` line at boot.
+- All four print one `[dps-proracing] <thing>: <vendor>` line at boot.
 
 - [ ] **Step 1: Write the test**
 
@@ -819,7 +819,7 @@ end)
 local provider = 'print'
 if GetResourceState('ox_lib') == 'started' or GetResourceState('ox_lib') == 'starting' then provider = 'ox_lib'
 elseif GetResourceState('okokNotify') == 'started' then provider = 'okokNotify' end
-print(('[dps-roxwoodracing] notify: %s'):format(provider))
+print(('[dps-proracing] notify: %s'):format(provider))
 
 local function mapType(t)
   if t == 'inform' or t == 'info' then return 'inform' end
@@ -834,15 +834,15 @@ function Notify(title, description, ntype, duration)
   elseif provider == 'okokNotify' then
     exports.okokNotify:Alert(title or '', description or '', duration or 5000, mapType(ntype), false)
   else
-    print(('[dps-roxwoodracing] %s: %s'):format(tostring(title), tostring(description)))
+    print(('[dps-proracing] %s: %s'):format(tostring(title), tostring(description)))
   end
 end
 
-RegisterNetEvent('dps-roxwoodracing:client:notify', function(title, description, ntype, duration)
+RegisterNetEvent('dps-proracing:client:notify', function(title, description, ntype, duration)
   Notify(title, description, ntype, duration)
 end)
 ```
-Then in `client/main.lua`: delete the old `SpeedwayNotify` function (lines ~465–481 including its `RegisterNetEvent('dps-roxwoodracing:client:notify', ...)`) and `sed -i 's/SpeedwayNotify(/Notify(/g' client/main.lua client/pit.lua`. Delete `SpeedwayAlert` too (unused).
+Then in `client/main.lua`: delete the old `SpeedwayNotify` function (lines ~465–481 including its `RegisterNetEvent('dps-proracing:client:notify', ...)`) and `sed -i 's/SpeedwayNotify(/Notify(/g' client/main.lua client/pit.lua`. Delete `SpeedwayAlert` too (unused).
 
 - [ ] **Step 4: Write integrations/target.lua**
 
@@ -852,7 +852,7 @@ Target = {}
 Target.Provider = 'none'
 if GetResourceState('ox_target') == 'started' or GetResourceState('ox_target') == 'starting' then Target.Provider = 'ox_target'
 elseif GetResourceState('qb-target') == 'started' then Target.Provider = 'qb-target' end
-print(('[dps-roxwoodracing] target: %s'):format(Target.Provider))
+print(('[dps-proracing] target: %s'):format(Target.Provider))
 
 ---@param ped number entity
 ---@param options table[] ox_target-style: { name, label, icon, event, canInteract, distance }
@@ -884,8 +884,8 @@ end
 In `client/main.lua` replace the block from `-- Support ox_target, qb-target, or fallback` down to the end of the `else ... end` fallback (old lines 522–583) with:
 ```lua
     Target.AddPed(ped, {
-      { name = 'roxwood_create_lobby', event = 'dps-roxwoodracing:client:createLobby', icon = 'fa-solid fa-flag-checkered', label = Locale('create_lobby'), canInteract = function() return not hasLobby end, distance = 2.5 },
-      { name = 'roxwood_join_lobby',   event = 'dps-roxwoodracing:client:joinLobby',   icon = 'fa-solid fa-user-plus',       label = Locale('join_lobby'),   canInteract = function() return hasLobby and not currentLobby end, distance = 2.5 },
+      { name = 'roxwood_create_lobby', event = 'dps-proracing:client:createLobby', icon = 'fa-solid fa-flag-checkered', label = Locale('create_lobby'), canInteract = function() return not hasLobby end, distance = 2.5 },
+      { name = 'roxwood_join_lobby',   event = 'dps-proracing:client:joinLobby',   icon = 'fa-solid fa-user-plus',       label = Locale('join_lobby'),   canInteract = function() return hasLobby and not currentLobby end, distance = 2.5 },
     })
 ```
 
@@ -899,7 +899,7 @@ Keys.Provider = 'none'
 for _, name in ipairs(order) do
   if GetResourceState(name) == 'started' or GetResourceState(name) == 'starting' then Keys.Provider = name break end
 end
-print(('[dps-roxwoodracing] keys: %s'):format(Keys.Provider))
+print(('[dps-proracing] keys: %s'):format(Keys.Provider))
 
 function Keys.Give(veh, plate)
   local p = Keys.Provider
@@ -916,13 +916,13 @@ function Keys.Give(veh, plate)
   SetVehicleDoorsLocked(veh, 1)
 end
 
-RegisterNetEvent('dps-roxwoodracing:client:giveKeys', function(netId, plate)
+RegisterNetEvent('dps-proracing:client:giveKeys', function(netId, plate)
   local veh = NetworkGetEntityFromNetworkId(netId)
   if veh and veh ~= 0 and DoesEntityExist(veh) then Keys.Give(veh, plate or GetVehicleNumberPlateText(veh)) end
 end)
 ```
 Note: `RegisterNetEvent` is not stubbed; add `function RegisterNetEvent() end` and `function NetworkGetEntityFromNetworkId() return 0 end` to `tests/stubs.lua`.
-In `client/main.lua` replace `GiveVehicleKeys(veh)` with `Keys.Give(veh, data.plate)`. In `server/race.lua` change `TriggerClientEvent("dps-roxwoodracing:client:giveKeys", pid, netId)` to pass `netId, plate`.
+In `client/main.lua` replace `GiveVehicleKeys(veh)` with `Keys.Give(veh, data.plate)`. In `server/race.lua` change `TriggerClientEvent("dps-proracing:client:giveKeys", pid, netId)` to pass `netId, plate`.
 
 - [ ] **Step 6: Rewrite integrations/fuel.lua**
 
@@ -943,7 +943,7 @@ else
     if GetResourceState(name) == 'started' then Fuel.Provider = name break end
   end
 end
-print(('[dps-roxwoodracing] fuel: %s'):format(Fuel.Provider))
+print(('[dps-proracing] fuel: %s'):format(Fuel.Provider))
 
 function Fuel.Set(veh, level)
   if not veh or veh == 0 or not DoesEntityExist(veh) then return end
@@ -958,16 +958,16 @@ end
 
 function Fuel.SetFull(veh) Fuel.Set(veh, 100.0) end
 
-RegisterNetEvent('dps-roxwoodracing:client:setFuel', function(netId, level)
+RegisterNetEvent('dps-proracing:client:setFuel', function(netId, level)
   local veh = NetworkGetEntityFromNetworkId(netId)
   Fuel.Set(veh, level)
 end)
-RegisterNetEvent('dps-roxwoodracing:client:fillFuel', function(netId)
+RegisterNetEvent('dps-proracing:client:fillFuel', function(netId)
   local veh = NetworkGetEntityFromNetworkId(netId)
   Fuel.SetFull(veh)
 end)
 ```
-Then: `sed -i 's/SetFullFuel(/Fuel.SetFull(/g; s/SetFuelLevel(/Fuel.Set(/g' client/main.lua client/pit.lua` and delete the duplicate `dps-roxwoodracing:client:fillFuel` handler in `client/main.lua` (old lines 1178–1181).
+Then: `sed -i 's/SetFullFuel(/Fuel.SetFull(/g; s/SetFuelLevel(/Fuel.Set(/g' client/main.lua client/pit.lua` and delete the duplicate `dps-proracing:client:fillFuel` handler in `client/main.lua` (old lines 1178–1181).
 
 - [ ] **Step 7: Run tests, commit**
 
@@ -993,7 +993,7 @@ git commit -m "Client integrations: notify, target, keys, fuel with boot-time de
 
 `tests/test_banking.lua`:
 ```lua
-local function loadBanking() Config = { Job = { name = 'roxwoodracing', label = 'Roxwood Raceway' } }; Banking = nil; dofile('integrations/banking.lua') end
+local function loadBanking() Config = { Job = { name = 'proracing', label = 'Roxwood Raceway' } }; Banking = nil; dofile('integrations/banking.lua') end
 
 TEST('Renewed-Banking: deposit/withdraw call the exports and log a transaction', function()
   RESET_STUB(); STUB.started = { ['Renewed-Banking'] = true }
@@ -1007,19 +1007,19 @@ TEST('Renewed-Banking: deposit/withdraw call the exports and log a transaction',
   } }
   loadBanking()
   EQ(Banking.Provider, 'Renewed-Banking')
-  TRUTHY(Banking.EnsureAccount('roxwoodracing', 'Roxwood Raceway'))
-  TRUTHY(Banking.Deposit('roxwoodracing', 500, 'Entry fee', 'Lobby X', 'Sam Rider')); EQ(bal, 2500)
-  TRUTHY(Banking.Withdraw('roxwoodracing', 1000, 'Purse', '1st place', 'Sam Rider')); EQ(bal, 1500)
-  FALSY(Banking.Withdraw('roxwoodracing', 9999, 'Purse', 'too much', 'Sam Rider')); EQ(bal, 1500)
+  TRUTHY(Banking.EnsureAccount('proracing', 'Roxwood Raceway'))
+  TRUTHY(Banking.Deposit('proracing', 500, 'Entry fee', 'Lobby X', 'Sam Rider')); EQ(bal, 2500)
+  TRUTHY(Banking.Withdraw('proracing', 1000, 'Purse', '1st place', 'Sam Rider')); EQ(bal, 1500)
+  FALSY(Banking.Withdraw('proracing', 9999, 'Purse', 'too much', 'Sam Rider')); EQ(bal, 1500)
   EQ(#log, 2); EQ(log[1][4], 'deposit'); EQ(log[2][4], 'withdraw')
 end)
 
 TEST('no banking: Deposit/Withdraw succeed as no-ops and balance is huge', function()
   RESET_STUB(); loadBanking()
   EQ(Banking.Provider, 'none')
-  TRUTHY(Banking.Deposit('roxwoodracing', 5, 't', 'm', 'x'))
-  TRUTHY(Banking.Withdraw('roxwoodracing', 5, 't', 'm', 'x'))
-  TRUTHY(Banking.GetBalance('roxwoodracing') >= 1e9)
+  TRUTHY(Banking.Deposit('proracing', 5, 't', 'm', 'x'))
+  TRUTHY(Banking.Withdraw('proracing', 5, 't', 'm', 'x'))
+  TRUTHY(Banking.GetBalance('proracing') >= 1e9)
 end)
 
 TEST('Garages: jg present -> insert row with garage_id; absent -> garage column', function()
@@ -1051,9 +1051,9 @@ if GetResourceState('Renewed-Banking') == 'started' or GetResourceState('Renewed
 elseif GetResourceState('qb-banking') == 'started' then
   Banking.Provider = 'qb-banking'
 end
-print(('[dps-roxwoodracing] banking: %s'):format(Banking.Provider))
+print(('[dps-proracing] banking: %s'):format(Banking.Provider))
 if Banking.Provider == 'none' then
-  print('[dps-roxwoodracing] WARNING: no society banking found; entry fees and purses fall back to player cash')
+  print('[dps-proracing] WARNING: no society banking found; entry fees and purses fall back to player cash')
 end
 
 local function rb() return exports['Renewed-Banking'] end
@@ -1061,7 +1061,7 @@ local function rb() return exports['Renewed-Banking'] end
 function Banking.EnsureAccount(name, label)
   if Banking.Provider == 'Renewed-Banking' then
     local ok, res = pcall(function() return rb():CreateJobAccount({ name = name, label = label }, 0) end)
-    if not ok then print('[dps-roxwoodracing] CreateJobAccount failed: ' .. tostring(res)) end
+    if not ok then print('[dps-proracing] CreateJobAccount failed: ' .. tostring(res)) end
     return ok and res ~= nil
   elseif Banking.Provider == 'qb-banking' then
     pcall(function() exports['qb-banking']:CreateJobAccount(name, 0) end)
@@ -1129,7 +1129,7 @@ end
 -- otherwise the stock qb/qbx 'garage' column.
 Garages = {}
 Garages.Provider = (GetResourceState('jg-advancedgarages') == 'started' or GetResourceState('jg-advancedgarages') == 'starting') and 'jg-advancedgarages' or 'none'
-print(('[dps-roxwoodracing] garages: %s'):format(Garages.Provider))
+print(('[dps-proracing] garages: %s'):format(Garages.Provider))
 
 function Garages.GiveVehicle(pid, model, plate)
   local cid = Bridge.GetPlayerIdentifier(pid)
@@ -1382,7 +1382,7 @@ git commit -m "Shared pure modules: lobby validation, plates, tune presets, payo
 ```lua
 local function setup(provider, balance)
   RESET_STUB()
-  Config = { Job = { name = 'roxwoodracing', label = 'Roxwood Raceway' },
+  Config = { Job = { name = 'proracing', label = 'Roxwood Raceway' },
              Economy = { purseSource = 'society', entryFee = { enabled = true, amount = 1000 }, poolSplit = { [1] = 60, [2] = 30, [3] = 10 },
                          payouts = { [1] = 5000, [2] = 3000, [3] = 1500 }, participationReward = 500, bestLapBonus = 1000, moneyType = 'cash' } }
   local cash = { [1] = 2000, [2] = 50 }
@@ -1418,7 +1418,7 @@ TEST('Settle pays purse from society when covered', function()
   EQ(cash[1], 2000 + 5000 + 500 + 1000 + 1200)
   EQ(cash[2], 50 + 3000 + 500 + 600)
   EQ(soc(), 50000 - (5000 + 500 + 1000 + 1200) - (3000 + 500 + 600))
-  EQ(STUB.clientEvents[1].name, 'dps-roxwoodracing:client:rewardNotify')
+  EQ(STUB.clientEvents[1].name, 'dps-proracing:client:rewardNotify')
 end)
 
 TEST('Settle pays pool only when society is short', function()
@@ -1455,7 +1455,7 @@ function Rewards.FeeAmount()
 end
 
 local function notify(pid, msgKey, ...)
-  TriggerClientEvent('dps-roxwoodracing:client:notify', pid, Config.Job.label, Locale(msgKey, ...), 'inform')
+  TriggerClientEvent('dps-proracing:client:notify', pid, Config.Job.label, Locale(msgKey, ...), 'inform')
 end
 
 function Rewards.ChargeEntryFee(pid, lobbyName)
@@ -1463,10 +1463,10 @@ function Rewards.ChargeEntryFee(pid, lobbyName)
   if amount <= 0 then return true end
   if not Bridge.Framework then return true end
   if Bridge.GetMoney(pid, eco().moneyType) < amount then
-    TriggerClientEvent('dps-roxwoodracing:client:notify', pid, Config.Job.label, Locale('entry_fee_insufficient', amount), 'error')
+    TriggerClientEvent('dps-proracing:client:notify', pid, Config.Job.label, Locale('entry_fee_insufficient', amount), 'error')
     return false
   end
-  if not Bridge.RemoveMoney(pid, eco().moneyType, amount, 'roxwoodracing-entryfee') then return false end
+  if not Bridge.RemoveMoney(pid, eco().moneyType, amount, 'proracing-entryfee') then return false end
   Banking.Deposit(account(), amount, 'Entry fee', ('Lobby %s'):format(tostring(lobbyName)), Bridge.GetPlayerName(pid))
   notify(pid, 'entry_fee_charged', amount)
   return true
@@ -1478,7 +1478,7 @@ function Rewards.RefundEntryFee(pid, lobbyName)
   if not Banking.Withdraw(account(), amount, 'Entry fee refund', ('Lobby %s'):format(tostring(lobbyName)), Bridge.GetPlayerName(pid)) then
     return -- account drained by staff meanwhile; nothing to refund from
   end
-  Bridge.AddMoney(pid, eco().moneyType, amount, 'roxwoodracing-entryfee-refund')
+  Bridge.AddMoney(pid, eco().moneyType, amount, 'proracing-entryfee-refund')
   notify(pid, 'entry_fee_refunded', amount)
 end
 
@@ -1486,10 +1486,10 @@ local function payFromSource(pid, amount, title, message)
   if amount <= 0 then return true end
   if eco().purseSource == 'house' then
     Banking.LogOnly(account(), amount, title, message, account(), Bridge.GetPlayerName(pid))
-    return Bridge.AddMoney(pid, eco().moneyType, amount, 'roxwoodracing-' .. title:lower():gsub('%s', '-'))
+    return Bridge.AddMoney(pid, eco().moneyType, amount, 'proracing-' .. title:lower():gsub('%s', '-'))
   end
   if not Banking.Withdraw(account(), amount, title, message, Bridge.GetPlayerName(pid)) then return false end
-  return Bridge.AddMoney(pid, eco().moneyType, amount, 'roxwoodracing-' .. title:lower():gsub('%s', '-'))
+  return Bridge.AddMoney(pid, eco().moneyType, amount, 'proracing-' .. title:lower():gsub('%s', '-'))
 end
 
 ---@param lob table lobby (uses prizePool, name)
@@ -1511,7 +1511,7 @@ function Rewards.Settle(lob, results, bestLapPid)
       -- Pool money is the racers' own buy-ins parked in the account; always paid.
       if p.pool > 0 then
         if Banking.Withdraw(account(), p.pool, 'Prize pool', msg, Bridge.GetPlayerName(pid)) then
-          Bridge.AddMoney(pid, eco().moneyType, p.pool, 'roxwoodracing-prizepool')
+          Bridge.AddMoney(pid, eco().moneyType, p.pool, 'proracing-prizepool')
         end
       end
       local vehiclePrize = nil
@@ -1519,7 +1519,7 @@ function Rewards.Settle(lob, results, bestLapPid)
         vehiclePrize = eco().vehiclePrize
         Garages.GiveVehicle(pid, vehiclePrize, 'PRIZE' .. math.random(100, 999))
       end
-      TriggerClientEvent('dps-roxwoodracing:client:rewardNotify', pid, {
+      TriggerClientEvent('dps-proracing:client:rewardNotify', pid, {
         positionPayout = p.position, positionLabel = labelFor[pos] or (pos .. 'th'),
         participation = p.participation, bestLapBonus = p.bestLap, poolPayout = p.pool,
         vehiclePrize = vehiclePrize, totalPayout = p.total, purseCovered = covered,
@@ -1565,7 +1565,7 @@ Delete `Config.Rewards` and `Config.EntryFee` from `config/economy.lua`. `grep -
 `./tools/check.sh` → `24 passed, 0 failed`.
 ```bash
 git add server/rewards.lua server/race.lua config/economy.lua tests
-git commit -m "Rewards: entry fees, pool and purse through the roxwoodracing society account"
+git commit -m "Rewards: entry fees, pool and purse through the proracing society account"
 ```
 
 ---
@@ -1578,7 +1578,7 @@ git commit -m "Rewards: entry fees, pool and purse through the roxwoodracing soc
 - Test: `tests/test_stats.lua`
 
 **Interfaces:**
-- Produces: `Stats.TABLE = 'dps_roxwoodracing_stats'`, `Stats.Migrate()` (rename or create), `Stats.Save(pid, position, track, bestLap, earnings, mode)`, `Stats.MergeBestLap(bestLaps, track, lap) → bestLaps, newRecord:boolean`, callback `dps-roxwoodracing:getPlayerStats`.
+- Produces: `Stats.TABLE = 'dps_proracing_stats'`, `Stats.Migrate()` (rename or create), `Stats.Save(pid, position, track, bestLap, earnings, mode)`, `Stats.MergeBestLap(bestLaps, track, lap) → bestLaps, newRecord:boolean`, callback `dps-proracing:getPlayerStats`.
 
 - [ ] **Step 1: Write the test**
 
@@ -1620,7 +1620,7 @@ end)
 
 ```lua
 Stats = {}
-Stats.TABLE = 'dps_roxwoodracing_stats'
+Stats.TABLE = 'dps_proracing_stats'
 
 local function tableExists(name)
   local n = MySQL.scalar.await('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?', { name })
@@ -1632,7 +1632,7 @@ function Stats.Migrate()
   local oldExists, newExists = tableExists('speedway_stats'), tableExists(Stats.TABLE)
   if oldExists and not newExists then
     MySQL.query.await(('RENAME TABLE speedway_stats TO %s'):format(Stats.TABLE))
-    print('[dps-roxwoodracing] stats: renamed speedway_stats -> ' .. Stats.TABLE)
+    print('[dps-proracing] stats: renamed speedway_stats -> ' .. Stats.TABLE)
   end
   MySQL.query.await(([[
     CREATE TABLE IF NOT EXISTS %s (
@@ -1647,7 +1647,7 @@ function Stats.Migrate()
     )]]):format(Stats.TABLE))
   MySQL.query.await(('ALTER TABLE %s ADD COLUMN IF NOT EXISTS spec_wins INT DEFAULT 0'):format(Stats.TABLE))
   MySQL.query.await(('ALTER TABLE %s ADD COLUMN IF NOT EXISTS open_wins INT DEFAULT 0'):format(Stats.TABLE))
-  print('[dps-roxwoodracing] stats: table ready')
+  print('[dps-proracing] stats: table ready')
 end
 
 function Stats.MergeBestLap(bestLaps, track, lap)
@@ -1685,13 +1685,13 @@ function Stats.Save(pid, position, track, bestLap, earnings, mode)
       best_laps = ?, spec_wins = spec_wins + ?, open_wins = open_wins + ?, last_race = NOW()]]):format(Stats.TABLE),
     { cid, isWin, isTop3, earnings, encoded, specWin, openWin, isWin, isTop3, earnings, encoded, specWin, openWin })
   if Config.Stats.showAfterRace then
-    TriggerClientEvent('dps-roxwoodracing:client:statsNotify', pid, {
+    TriggerClientEvent('dps-proracing:client:statsNotify', pid, {
       wins = prevWins + isWin, totalRaces = prevRaces + 1, bestLap = bestLaps[track], newRecord = newRecord and bestLap or nil,
     })
   end
 end
 
-lib.callback.register('dps-roxwoodracing:getPlayerStats', function(source)
+lib.callback.register('dps-proracing:getPlayerStats', function(source)
   local cid = Bridge.GetPlayerIdentifier(source)
   if not cid then return nil end
   local row = MySQL.single.await(('SELECT * FROM %s WHERE citizenid = ?'):format(Stats.TABLE), { cid })
@@ -1707,14 +1707,14 @@ Note the test stub's `CreateThread` runs immediately, so `Stats.Migrate` runs at
 - [ ] **Step 4: Wire the callers**
 
 - `server/race.lua`: delete the table-create block (old 78–94), `SaveRaceStats` (201–254), the `getPlayerStats` callback (259–266). Replace `SaveRaceStats(pidLocal, posLocal, lob.track, bestLapLocal, totalEarnings)` with `Stats.Save(pidLocal, posLocal, lob.track, bestLapLocal, totalEarnings, lob.mode)`.
-- `server/leaderboard.lua`: `FROM speedway_stats` → `FROM dps_roxwoodracing_stats`. Its `Bridge.GetAllPlayersWithIdentifier()` use (name resolution for idle board) becomes `Bridge.GetPlayerNameFromDB(citizenid)` per row, cached in a local table.
+- `server/leaderboard.lua`: `FROM speedway_stats` → `FROM dps_proracing_stats`. Its `Bridge.GetAllPlayersWithIdentifier()` use (name resolution for idle board) becomes `Bridge.GetPlayerNameFromDB(citizenid)` per row, cached in a local table.
 
 - [ ] **Step 5: Run tests, commit**
 
 `./tools/check.sh` → `27 passed, 0 failed`.
 ```bash
 git add server tests/test_stats.lua
-git commit -m "Stats: rename to dps_roxwoodracing_stats with migration and spec/open win counters"
+git commit -m "Stats: rename to dps_proracing_stats with migration and spec/open win counters"
 ```
 
 ---
@@ -1828,7 +1828,7 @@ git commit -m "Extract ranking sort and results build into a pure shared module"
 
 **Interfaces:**
 - Consumes: `Validate.CreateArgs`, `Plates.FromName`, `Rewards.*`, `Ranking.*`.
-- Produces: `Lobbies.SpecCatalogue() → { classes = { [key] = { label, vehicles = { {model, label}, ... } } }, order = { key, ... } }` built from `exports.qbx_core:GetVehiclesByName()` (fallback `Config.SpecFallbackVehicles`), cached; `Config.SpecClassKeys` populated from it at boot (`All` + one key per class + preset keys). `Lobbies.IsModelAllowed(classKey, model) → bool`. `Lobbies.VerifyOwnedVehicle(pid, plate) → bool` (query `player_vehicles`/`owned_vehicles`). Callback `dps-roxwoodracing:getSpecCatalogue`.
+- Produces: `Lobbies.SpecCatalogue() → { classes = { [key] = { label, vehicles = { {model, label}, ... } } }, order = { key, ... } }` built from `exports.qbx_core:GetVehiclesByName()` (fallback `Config.SpecFallbackVehicles`), cached; `Config.SpecClassKeys` populated from it at boot (`All` + one key per class + preset keys). `Lobbies.IsModelAllowed(classKey, model) → bool`. `Lobbies.VerifyOwnedVehicle(pid, plate) → bool` (query `player_vehicles`/`owned_vehicles`). Callback `dps-proracing:getSpecCatalogue`.
 - Lobby record gains: `mode`, `class`, `tune`, `vehicles = { [pid] = { netId=, plate= } }` (open mode).
 - Client event contract changes: `createLobby(args)` takes one table `{ name, track, laps, mode, class, tune }`; `joinLobby(lobbyName, vehicle)` where `vehicle = { netId, plate, class } | nil`; `prepareStart` payload gains `mode`, `tune`, `keepVehicle`; `client:finishTeleport(coords, keepVehicle)`.
 
@@ -1922,7 +1922,7 @@ function Lobbies.SpecCatalogue()
       end
     end
   else
-    print('[dps-roxwoodracing] WARNING: no vehicle registry; spec menu uses Config.SpecFallbackVehicles')
+    print('[dps-proracing] WARNING: no vehicle registry; spec menu uses Config.SpecFallbackVehicles')
     for _, v in ipairs(Config.SpecFallbackVehicles or {}) do classes.All.vehicles[#classes.All.vehicles+1] = { model = v.model, label = v.label } end
   end
   -- Named presets from config (only models the registry knows, or all when no registry)
@@ -1938,7 +1938,7 @@ function Lobbies.SpecCatalogue()
       local k = 'Preset' .. key
       classes[k] = { label = preset.label or key, vehicles = list }; order[#order+1] = k
     else
-      print(('[dps-roxwoodracing] preset %s has no registered vehicles; skipped'):format(key))
+      print(('[dps-proracing] preset %s has no registered vehicles; skipped'):format(key))
     end
   end
   Config.SpecClassKeys = {}
@@ -1976,8 +1976,8 @@ function Lobbies.VerifyOwnedVehicle(pid, plate)
   return (tonumber(n) or 0) > 0
 end
 
-lib.callback.register('dps-roxwoodracing:getSpecCatalogue', function() return Lobbies.SpecCatalogue() end)
-lib.callback.register('dps-roxwoodracing:getOpenClasses', function()
+lib.callback.register('dps-proracing:getSpecCatalogue', function() return Lobbies.SpecCatalogue() end)
+lib.callback.register('dps-proracing:getOpenClasses', function()
   local out = {}
   for k, v in pairs(Config.OpenClasses) do out[#out+1] = { value = k, label = v.label } end
   table.sort(out, function(a, b) if a.value == 'Any' then return true elseif b.value == 'Any' then return false end return a.label < b.label end)
@@ -1994,7 +1994,7 @@ Apply these edits to `server/race.lua`:
 1. Delete `VALID_TRACKS`, `VALID_CLASSES`, `VALID_MODELS` (old 41–48) and `makePlateFromPlayer` (316–362).
 2. `createLobby` becomes:
 ```lua
-RegisterNetEvent('dps-roxwoodracing:createLobby', function(args)
+RegisterNetEvent('dps-proracing:createLobby', function(args)
   local src = source
   if RateLimit(src, 'createLobby', 2000) then return end
   local ok, errKey, c = Validate.CreateArgs(args, Config)
@@ -2017,8 +2017,8 @@ RegisterNetEvent('dps-roxwoodracing:createLobby', function(args)
   }
   if c.mode == 'open' then lobbies[c.name].vehicles[src] = { netId = tonumber(args.vehicle.netId), plate = args.vehicle.plate } end
   ServerNotify(src, Config.Job.label, Locale('lobby_created', c.name), 'success')
-  TriggerClientEvent('dps-roxwoodracing:updateLobbyInfo', src, buildLobbyInfo(c.name, lobbies[c.name]))
-  TriggerClientEvent('dps-roxwoodracing:setLobbyState', -1, next(lobbies) ~= nil)
+  TriggerClientEvent('dps-proracing:updateLobbyInfo', src, buildLobbyInfo(c.name, lobbies[c.name]))
+  TriggerClientEvent('dps-proracing:setLobbyState', -1, next(lobbies) ~= nil)
 end)
 ```
 3. `joinLobby(lobbyName)` → `joinLobby(lobbyName, vehicle)`; after the refund-cooldown check and before `ChargeEntryFee`, add:
@@ -2034,7 +2034,7 @@ end)
 5. `startRace`: after `pendingChoices[lobbyName] = ...` branch on mode. For **open** lobbies skip the vehicle-select flow entirely:
 ```lua
   if lob.mode == 'open' then
-    for _, pid in ipairs(lob.players) do TriggerClientEvent('dps-roxwoodracing:hideLobbyWindow', pid) end
+    for _, pid in ipairs(lob.players) do TriggerClientEvent('dps-proracing:hideLobbyWindow', pid) end
     StartOpenRace(lobbyName, lob)
     return
   end
@@ -2051,18 +2051,18 @@ local function StartOpenRace(lobbyName, lob)
     local v = lob.vehicles[pid]
     local sp = Config.GridSpawnPoints[idx]
     if v and sp then
-      TriggerClientEvent('dps-roxwoodracing:prepareStart', pid, {
+      TriggerClientEvent('dps-proracing:prepareStart', pid, {
         track = lob.track, laps = lob.laps, netId = v.netId, plate = v.plate, mode = 'open', tune = 'Stock', keepVehicle = true, grid = sp,
       })
       netIds[#netIds+1] = { pid = pid, netId = v.netId }
     end
   end
-  TriggerClientEvent('dps-roxwoodracing:raceVehicles', -1, netIds)
+  TriggerClientEvent('dps-proracing:raceVehicles', -1, netIds)
   if Config.Ghosting.enabled and Config.Ghosting.startGhosted then
     lob.ghostActive = true
     CreateThread(function()
       Wait(Config.Ghosting.unghostTimerSeconds * 1000)
-      if lob.ghostActive then lob.ghostActive = false; for _, pid in ipairs(lob.players) do TriggerClientEvent('dps-roxwoodracing:client:unghost', pid) end end
+      if lob.ghostActive then lob.ghostActive = false; for _, pid in ipairs(lob.players) do TriggerClientEvent('dps-proracing:client:unghost', pid) end end
     end)
   end
   CreateThread(function() Wait(8000); gridLocked = false end)
@@ -2075,9 +2075,9 @@ end
 ```
    `giveKeys` event passes `netId, plate`; `prepareStart` payload adds `mode = 'spec', tune = lob.tune, keepVehicle = false`.
 7. `selectedVehicle`: replace the `VALID_MODELS` / `Config.RaceClasses` checks with `if not Lobbies.IsModelAllowed(lob.class, model) then return end`. `chooseVehicle` event passes `lob.class` (was `lob.raceClass`).
-8. `lapPassed` finish: `TriggerClientEvent("dps-roxwoodracing:client:finishTeleport", src, Config.outCoords)` → `..., Config.outCoords, lob.mode == 'open')`.
-9. Remove the two `TriggerClientEvent('dps-roxwoodracing:cam:broadcastOn'/'Off')` and `TriggerEvent('dps-roxwoodracing:feed:setLeader', ...)` lines (dead hooks for a feed module that does not exist).
-10. `exports['dps-roxwoodracing']:ShowIdleLeaderboard()` calls stay (Task 14 keeps the export).
+8. `lapPassed` finish: `TriggerClientEvent("dps-proracing:client:finishTeleport", src, Config.outCoords)` → `..., Config.outCoords, lob.mode == 'open')`.
+9. Remove the two `TriggerClientEvent('dps-proracing:cam:broadcastOn'/'Off')` and `TriggerEvent('dps-proracing:feed:setLeader', ...)` lines (dead hooks for a feed module that does not exist).
+10. `exports['dps-proracing']:ShowIdleLeaderboard()` calls stay (Task 14 keeps the export).
 
 - [ ] **Step 5: Run tests, commit**
 
@@ -2097,7 +2097,7 @@ git commit -m "Lobbies: registry-built spec catalogue, Open mode ownership check
 - Test: `tests/test_staff.lua`
 
 **Interfaces:**
-- Produces (server): `Race.EndLobby(lobbyName, reason)` (refunds if not started, tears down props/zones for members, clears lobby, promotes the sign owner), `Race.SetSignMode(lobbyName, 'names'|'toggle')`, `Race.ListLobbies() → { {name, track, mode, started, players}, ... }`; `Staff.Can(src, gradeKey) → bool`; net event `dps-roxwoodracing:staff:action(action, payload)`; settings overrides persisted in table `dps_roxwoodracing_settings (k VARCHAR(40) PK, v VARCHAR(200))` and applied onto `Config.Economy` at boot (`Staff.LoadSettings`, `Staff.SetSetting(k, v)`).
+- Produces (server): `Race.EndLobby(lobbyName, reason)` (refunds if not started, tears down props/zones for members, clears lobby, promotes the sign owner), `Race.SetSignMode(lobbyName, 'names'|'toggle')`, `Race.ListLobbies() → { {name, track, mode, started, players}, ... }`; `Staff.Can(src, gradeKey) → bool`; net event `dps-proracing:staff:action(action, payload)`; settings overrides persisted in table `dps_proracing_settings (k VARCHAR(40) PK, v VARCHAR(200))` and applied onto `Config.Economy` at boot (`Staff.LoadSettings`, `Staff.SetSetting(k, v)`).
 - Produces (client): `BossMenu.AddItem()` registers "Raceway Control" in the qbx_management boss menu; `/raceway` opens the same ox_lib context for Marshal and above.
 
 - [ ] **Step 1: Write the test**
@@ -2105,19 +2105,19 @@ git commit -m "Lobbies: registry-built spec catalogue, Open mode ownership check
 `tests/test_staff.lua`:
 ```lua
 TEST('Staff.Can checks job and grade through the bridge', function()
-  RESET_STUB(); Config = { Job = { name = 'roxwoodracing', grades = { marshal = 0, director = 2, owner = 3 } }, Economy = { payouts = {}, entryFee = {} } }
-  Bridge = { HasJob = function(src, job, g) return src == 1 and job == 'roxwoodracing' and g <= 2 end }
+  RESET_STUB(); Config = { Job = { name = 'proracing', grades = { marshal = 0, director = 2, owner = 3 } }, Economy = { payouts = {}, entryFee = {} } }
+  Bridge = { HasJob = function(src, job, g) return src == 1 and job == 'proracing' and g <= 2 end }
   Race = {}; dofile('server/staff.lua')
   TRUTHY(Staff.Can(1, 'marshal')); TRUTHY(Staff.Can(1, 'director')); FALSY(Staff.Can(1, 'owner')); FALSY(Staff.Can(2, 'marshal'))
 end)
 
 TEST('SetSetting validates keys and applies onto Config.Economy', function()
-  RESET_STUB(); Config = { Job = { name = 'roxwoodracing', grades = {} }, Economy = { payouts = { [1] = 5000 }, entryFee = { amount = 1000 }, participationReward = 500, bestLapBonus = 1000 } }
+  RESET_STUB(); Config = { Job = { name = 'proracing', grades = {} }, Economy = { payouts = { [1] = 5000 }, entryFee = { amount = 1000 }, participationReward = 500, bestLapBonus = 1000 } }
   Bridge = {}; Race = {}; dofile('server/staff.lua')
   TRUTHY(Staff.SetSetting('payout1', 7000)); EQ(Config.Economy.payouts[1], 7000)
   TRUTHY(Staff.SetSetting('entryfee', 250)); EQ(Config.Economy.entryFee.amount, 250)
   FALSY(Staff.SetSetting('hack', 1)); FALSY(Staff.SetSetting('payout1', -5))
-  TRUTHY(STUB.queries[#STUB.queries].sql:find('dps_roxwoodracing_settings'))
+  TRUTHY(STUB.queries[#STUB.queries].sql:find('dps_proracing_settings'))
 end)
 ```
 
@@ -2127,7 +2127,7 @@ end)
 
 ```lua
 Staff = {}
-local SETTINGS = 'dps_roxwoodracing_settings'
+local SETTINGS = 'dps_proracing_settings'
 local keys = {
   payout1 = function(v) Config.Economy.payouts[1] = v end,
   payout2 = function(v) Config.Economy.payouts[2] = v end,
@@ -2154,7 +2154,7 @@ function Staff.LoadSettings()
   MySQL.query.await(('CREATE TABLE IF NOT EXISTS %s (k VARCHAR(40) NOT NULL PRIMARY KEY, v VARCHAR(200))'):format(SETTINGS))
   local rows = MySQL.query.await(('SELECT k, v FROM %s'):format(SETTINGS)) or {}
   for _, r in ipairs(rows) do if keys[r.k] and tonumber(r.v) then keys[r.k](tonumber(r.v)) end end
-  print(('[dps-roxwoodracing] staff settings loaded: %d overrides'):format(#rows))
+  print(('[dps-proracing] staff settings loaded: %d overrides'):format(#rows))
 end
 
 function Staff.Snapshot()
@@ -2164,28 +2164,28 @@ function Staff.Snapshot()
            balance = Banking and Banking.GetBalance(Config.Job.name) or 0, lobbies = Race.ListLobbies and Race.ListLobbies() or {} }
 end
 
-lib.callback.register('dps-roxwoodracing:staff:snapshot', function(src)
+lib.callback.register('dps-proracing:staff:snapshot', function(src)
   if not Staff.Can(src, 'marshal') then return nil end
   return Staff.Snapshot()
 end)
 
-RegisterNetEvent('dps-roxwoodracing:staff:action', function(action, payload)
+RegisterNetEvent('dps-proracing:staff:action', function(action, payload)
   local src = source
   payload = type(payload) == 'table' and payload or {}
-  local function deny() TriggerClientEvent('dps-roxwoodracing:client:notify', src, Config.Job.label, Locale('staff_only'), 'error') end
+  local function deny() TriggerClientEvent('dps-proracing:client:notify', src, Config.Job.label, Locale('staff_only'), 'error') end
   if action == 'endRace' then
     if not Staff.Can(src, 'marshal') then return deny() end
     Race.EndLobby(payload.lobby, 'staff')
   elseif action == 'clearProps' then
     if not Staff.Can(src, 'marshal') then return deny() end
-    TriggerClientEvent('dps-roxwoodracing:client:destroyprops', -1)
+    TriggerClientEvent('dps-proracing:client:destroyprops', -1)
   elseif action == 'signMode' then
     if not Staff.Can(src, 'marshal') then return deny() end
     Race.SetSignMode(payload.lobby, payload.mode)
   elseif action == 'setSetting' then
     if not Staff.Can(src, 'director') then return deny() end
     if not Staff.SetSetting(payload.key, payload.value) then
-      TriggerClientEvent('dps-roxwoodracing:client:notify', src, Config.Job.label, 'Invalid value.', 'error')
+      TriggerClientEvent('dps-proracing:client:notify', src, Config.Job.label, 'Invalid value.', 'error')
     end
   end
 end)
@@ -2220,19 +2220,19 @@ function Race.EndLobby(lobbyName, reason)
   if not lob then return end
   for _, pid in ipairs(lob.players) do
     if not lob.isStarted then Rewards.RefundEntryFee(pid, lobbyName) end
-    TriggerClientEvent('dps-roxwoodracing:kickedFromLobby', pid, lobbyName, reason or 'ended')
-    TriggerClientEvent('dps-roxwoodracing:client:destroyprops', pid)
-    TriggerClientEvent('dps-roxwoodracing:updateLobbyInfo', pid, nil)
-    if lob.isStarted then TriggerClientEvent('dps-roxwoodracing:client:finishTeleport', pid, Config.outCoords, lob.mode == 'open') end
+    TriggerClientEvent('dps-proracing:kickedFromLobby', pid, lobbyName, reason or 'ended')
+    TriggerClientEvent('dps-proracing:client:destroyprops', pid)
+    TriggerClientEvent('dps-proracing:updateLobbyInfo', pid, nil)
+    if lob.isStarted then TriggerClientEvent('dps-proracing:client:finishTeleport', pid, Config.outCoords, lob.mode == 'open') end
   end
   pendingChoices[lobbyName] = nil
   amirState[lobbyName] = nil
   lobbies[lobbyName] = nil
-  TriggerClientEvent('dps-roxwoodracing:setLobbyState', -1, next(lobbies) ~= nil)
+  TriggerClientEvent('dps-proracing:setLobbyState', -1, next(lobbies) ~= nil)
   if primaryLobby == lobbyName then
     primaryLobby = nil
     for n, l in pairs(lobbies) do if l.isStarted then primaryLobby = n break end end
-    if Config.Leaderboard and Config.Leaderboard.enabled and not primaryLobby then exports['dps-roxwoodracing']:ShowIdleLeaderboard() end
+    if Config.Leaderboard and Config.Leaderboard.enabled and not primaryLobby then exports['dps-proracing']:ShowIdleLeaderboard() end
   end
 end
 ```
@@ -2246,7 +2246,7 @@ BossMenu = {}
 if IsDuplicityVersion() then
   BossMenu.Provider = (GetResourceState('qbx_management') == 'started' or GetResourceState('qbx_management') == 'starting') and 'qbx_management'
     or (GetResourceState('qb-bossmenu') == 'started' and 'qb-bossmenu') or 'none'
-  print(('[dps-roxwoodracing] bossmenu: %s'):format(BossMenu.Provider))
+  print(('[dps-proracing] bossmenu: %s'):format(BossMenu.Provider))
   function BossMenu.Register()
     if BossMenu.Provider == 'qbx_management' then
       pcall(function()
@@ -2264,7 +2264,7 @@ else
         title = Locale('raceway_control'),
         description = 'Fees, purse, sign, end race',
         icon = 'flag-checkered',
-        event = 'dps-roxwoodracing:client:openControl',
+        event = 'dps-proracing:client:openControl',
         args = { type = 'job', groupName = Config.Job.name },
       })
     end)
@@ -2280,7 +2280,7 @@ Append:
 ```lua
 local function openControl()
   if not Bridge.HasJob(Config.Job.name, Config.Job.grades.marshal) then Notify(Config.Job.label, Locale('staff_only'), 'error') return end
-  local snap = lib.callback.await('dps-roxwoodracing:staff:snapshot', false)
+  local snap = lib.callback.await('dps-proracing:staff:snapshot', false)
   if not snap then return end
   local options = {}
   for _, l in ipairs(snap.lobbies) do
@@ -2288,28 +2288,28 @@ local function openControl()
       menu = nil, onSelect = function()
         local pick = lib.inputDialog(l.name, { { type = 'select', label = 'Action', options = { { value = 'endRace', label = 'End race' }, { value = 'names', label = 'Sign: names' }, { value = 'toggle', label = 'Sign: names + times' } } } })
         if not pick then return end
-        if pick[1] == 'endRace' then TriggerServerEvent('dps-roxwoodracing:staff:action', 'endRace', { lobby = l.name })
-        else TriggerServerEvent('dps-roxwoodracing:staff:action', 'signMode', { lobby = l.name, mode = pick[1] }) end
+        if pick[1] == 'endRace' then TriggerServerEvent('dps-proracing:staff:action', 'endRace', { lobby = l.name })
+        else TriggerServerEvent('dps-proracing:staff:action', 'signMode', { lobby = l.name, mode = pick[1] }) end
       end }
   end
-  options[#options+1] = { title = 'Clear track props', icon = 'broom', onSelect = function() TriggerServerEvent('dps-roxwoodracing:staff:action', 'clearProps') end }
+  options[#options+1] = { title = 'Clear track props', icon = 'broom', onSelect = function() TriggerServerEvent('dps-proracing:staff:action', 'clearProps') end }
   if Bridge.HasJob(Config.Job.name, Config.Job.grades.director) then
     options[#options+1] = { title = ('Account balance: $%s'):format(snap.balance), description = ('Purse source: %s'):format(snap.purseSource), disabled = true }
     local fields = { { 'entryfee', 'Entry fee' }, { 'payout1', '1st place' }, { 'payout2', '2nd place' }, { 'payout3', '3rd place' }, { 'showup', 'Show-up bonus' }, { 'bestlap', 'Fastest lap bonus' } }
     for _, f in ipairs(fields) do
       options[#options+1] = { title = ('%s: $%s'):format(f[2], snap[f[1]]), onSelect = function()
         local v = lib.inputDialog(f[2], { { type = 'number', label = 'Amount', default = snap[f[1]], min = 0 } })
-        if v and v[1] then TriggerServerEvent('dps-roxwoodracing:staff:action', 'setSetting', { key = f[1], value = v[1] }) end
+        if v and v[1] then TriggerServerEvent('dps-proracing:staff:action', 'setSetting', { key = f[1], value = v[1] }) end
       end }
     end
   end
-  lib.registerContext({ id = 'dps_roxwoodracing_control', title = Locale('raceway_control'), options = options })
-  lib.showContext('dps_roxwoodracing_control')
+  lib.registerContext({ id = 'dps_proracing_control', title = Locale('raceway_control'), options = options })
+  lib.showContext('dps_proracing_control')
 end
-RegisterNetEvent('dps-roxwoodracing:client:openControl', openControl)
+RegisterNetEvent('dps-proracing:client:openControl', openControl)
 RegisterCommand('raceway', openControl, false)
 ```
-Delete the old `speedway_cleanup` command (renamed already to `dps-roxwoodracing_cleanup` by sed; remove it) — `clearProps` replaces it.
+Delete the old `speedway_cleanup` command (renamed already to `dps-proracing_cleanup` by sed; remove it) — `clearProps` replaces it.
 
 - [ ] **Step 7: Run tests, commit**
 
@@ -2513,17 +2513,17 @@ function Ghost.Start(myVeh)
     Ghost.active = false
   end)
 end
-RegisterNetEvent('dps-roxwoodracing:raceVehicles', function(list) Ghost.SetRaceVehicles(list) end)
-RegisterNetEvent('dps-roxwoodracing:client:unghost', function() Ghost.Stop() end)
-RegisterNetEvent('dps-roxwoodracing:client:setGhosted', function(on) if on then Ghost.Start(Ghost.myVeh) else Ghost.Stop() end end)
+RegisterNetEvent('dps-proracing:raceVehicles', function(list) Ghost.SetRaceVehicles(list) end)
+RegisterNetEvent('dps-proracing:client:unghost', function() Ghost.Stop() end)
+RegisterNetEvent('dps-proracing:client:setGhosted', function(on) if on then Ghost.Start(Ghost.myVeh) else Ghost.Stop() end end)
 ```
 `IsRaceActive()` is the renamed `IsSpeedwayRaceActive()` from client/main.lua (rename with sed in main.lua and pit.lua). In main.lua replace `StartGhostThread()` with `Ghost.Start(veh)`, `myRaceVeh = veh` with nothing (Ghost.Start stores it), and every `ghostActive = false` / `raceNetIds = {}` / `myRaceVeh = nil` with `Ghost.Stop()`.
 
 - [ ] **Step 5: Client lobby creation and join with modes (client/main.lua)**
 
-Replace the `dps-roxwoodracing:client:createLobby` handler body (old 645–690) with:
+Replace the `dps-proracing:client:createLobby` handler body (old 645–690) with:
 ```lua
-RegisterNetEvent('dps-roxwoodracing:client:createLobby', function()
+RegisterNetEvent('dps-proracing:client:createLobby', function()
   if hasLobby then Notify(Locale('lobby_exists'), '', 'error') return end
   local modePick = lib.inputDialog(Locale('create_lobby'), {
     { type = 'select', label = Locale('select_mode'), required = true, default = 'spec',
@@ -2537,14 +2537,14 @@ RegisterNetEvent('dps-roxwoodracing:client:createLobby', function()
   local mode, laps, track = modePick[1], tonumber(modePick[2]) or 3, modePick[3]
   local args = { track = track, laps = laps, mode = mode }
   if mode == 'open' then
-    local classes = lib.callback.await('dps-roxwoodracing:getOpenClasses', false)
+    local classes = lib.callback.await('dps-proracing:getOpenClasses', false)
     local pick = lib.inputDialog(Locale('mode_open'), { { type = 'select', label = Locale('select_open_class'), required = true, default = 'Any', options = classes } })
     if not pick then return end
     args.class = pick[1]
     args.vehicle = GetMyVehicleInfo()
     if not args.vehicle then Notify(Config.Job.label, Locale('open_need_vehicle'), 'error') return end
   else
-    local cat = lib.callback.await('dps-roxwoodracing:getSpecCatalogue', false)
+    local cat = lib.callback.await('dps-proracing:getSpecCatalogue', false)
     local classOpts, tuneOpts = {}, {}
     for _, key in ipairs(cat.order) do classOpts[#classOpts+1] = { value = key, label = cat.classes[key].label } end
     for _, key in ipairs(Config.TuneOrder) do tuneOpts[#tuneOpts+1] = { value = key, label = Config.Tune[key].label } end
@@ -2559,7 +2559,7 @@ RegisterNetEvent('dps-roxwoodracing:client:createLobby', function()
   local safeName = rawName:gsub('[^%w_]', '_'):sub(1, 30)
   if safeName == '' then safeName = 'Racer' end
   args.name = safeName .. '_' .. math.random(1000, 9999)
-  TriggerServerEvent('dps-roxwoodracing:createLobby', args)
+  TriggerServerEvent('dps-proracing:createLobby', args)
 end)
 
 function GetMyVehicleInfo()
@@ -2574,7 +2574,7 @@ end
     local chosen = dialog[1]
     local vehicle = nil
     for _, e in ipairs(lobbies) do if e.value == chosen and e.mode == 'open' then vehicle = GetMyVehicleInfo() end end
-    TriggerServerEvent('dps-roxwoodracing:joinLobby', chosen, vehicle)
+    TriggerServerEvent('dps-proracing:joinLobby', chosen, vehicle)
 ```
 
 - [ ] **Step 6: prepareStart per mode (client/main.lua)**
@@ -2688,7 +2688,7 @@ git commit -m "Client: spec spawn with tune presets, Open-mode join, ghost modul
 
 **Interfaces:**
 - Exports `ShowIdleLeaderboard` / `StopIdleLeaderboard` unchanged (race.lua calls them).
-- Idle board: fetch once, push names once and times once (no 2 s flip loop); re-push only when `Stats.Save` reports a new record (`AddEventHandler('dps-roxwoodracing:recordSet')`).
+- Idle board: fetch once, push names once and times once (no 2 s flip loop); re-push only when `Stats.Save` reports a new record (`AddEventHandler('dps-proracing:recordSet')`).
 
 - [ ] **Step 1: Rewrite ShowIdleLeaderboard**
 
@@ -2704,11 +2704,11 @@ Replace the loop (old 140–178) with:
 ```
 and add:
 ```lua
-AddEventHandler('dps-roxwoodracing:recordSet', function()
+AddEventHandler('dps-proracing:recordSet', function()
   if idleStopFlag == false and not idleRunning then ShowIdleLeaderboard() end
 end)
 ```
-In `server/stats.lua`, after the upsert, `if newRecord then TriggerEvent('dps-roxwoodracing:recordSet') end`. `StopIdleLeaderboard` keeps setting `idleStopFlag = true`; `ShowIdleLeaderboard` resets it to `false` first.
+In `server/stats.lua`, after the upsert, `if newRecord then TriggerEvent('dps-proracing:recordSet') end`. `StopIdleLeaderboard` keeps setting `idleStopFlag = true`; `ShowIdleLeaderboard` resets it to `false` first.
 
 - [ ] **Step 2: Name resolution without the bridge helper**
 
@@ -2716,7 +2716,7 @@ In `GetTopBestTimes`, wherever it mapped citizenid → name via `Bridge.GetAllPl
 
 - [ ] **Step 3: Client DUI path and cleanup**
 
-`client/leaderboard.lua` already points at `nui://dps-roxwoodracing/html/led.html` (Task 1 sed). Confirm the `html/led.html` file references `LCDMB___.TTF` and `ads/` relatively (they moved together). `grep -n "leaderboard/" html/led.html` must print nothing.
+`client/leaderboard.lua` already points at `nui://dps-proracing/html/led.html` (Task 1 sed). Confirm the `html/led.html` file references `LCDMB___.TTF` and `ads/` relatively (they moved together). `grep -n "leaderboard/" html/led.html` must print nothing.
 
 - [ ] **Step 4: Gate, commit**
 
@@ -2739,10 +2739,10 @@ git commit -m "Leaderboard: idle board pushed once and on new records; names via
 ```markdown
 # Install on Del Perro Sands
 
-1. Resource lives at `resources/[dps]/dps-roxwoodracing`. `ensure [dps]` already covers it.
+1. Resource lives at `resources/[dps]/dps-proracing`. `ensure [dps]` already covers it.
 2. qbx_core `shared/jobs.lua` — add:
 
-    ['roxwoodracing'] = {
+    ['proracing'] = {
         label = 'Roxwood Raceway',
         defaultDuty = true,
         offDutyPay = false,
@@ -2769,21 +2769,21 @@ git commit -m "Leaderboard: idle board pushed once and on new records; names via
 
    (coords are the paddock next to the lobby ped; adjust in-game once.)
 4. Full server reboot. Boot log must show one line each for framework, notify, target, keys, fuel, banking, garages, bossmenu, stats.
-5. The society account `roxwoodracing` is created on first boot with $0. Deposit a float before the first race or set `Config.Economy.purseSource = 'house'`.
+5. The society account `proracing` is created on first boot with $0. Deposit a float before the first race or set `Config.Economy.purseSource = 'house'`.
 ```
 
-- [ ] **Step 2: README.md** — rewrite the top to say what the resource is now (DPS, job, society, Spec/Open, tune presets), replace the Configuration section with the five config files and the `Config.Economy` / `Config.Tune` / `Config.OpenClasses` blocks verbatim, update the commands table (`/racestats`, `/lobby`, `/raceway`), the file structure block, the database section (`dps_roxwoodracing_stats`, `dps_roxwoodracing_settings`), keep Credits (MaxSuperTech, glitchdetector, DrCannabis) and add DPS Development.
+- [ ] **Step 2: README.md** — rewrite the top to say what the resource is now (DPS, job, society, Spec/Open, tune presets), replace the Configuration section with the five config files and the `Config.Economy` / `Config.Tune` / `Config.OpenClasses` blocks verbatim, update the commands table (`/racestats`, `/lobby`, `/raceway`), the file structure block, the database section (`dps_proracing_stats`, `dps_proracing_settings`), keep Credits (MaxSuperTech, glitchdetector, DrCannabis) and add DPS Development.
 
 - [ ] **Step 3: CHANGELOG.md** — prepend:
 ```markdown
-## v3.0.0 — 2026-09-05 — dps-roxwoodracing
-- Renamed to dps-roxwoodracing; event prefix `dps-roxwoodracing:`.
-- New job `roxwoodracing` (Marshal, Pit Crew, Race Director, Owner); entry fees, pool and purse flow through the Renewed-Banking society account; `purseSource = 'society' | 'house'`.
+## v3.0.0 — 2026-09-05 — dps-proracing
+- Renamed to dps-proracing; event prefix `dps-proracing:`.
+- New job `proracing` (Marshal, Pit Crew, Race Director, Owner); entry fees, pool and purse flow through the Renewed-Banking society account; `purseSource = 'society' | 'house'`.
 - Lobby modes: Spec (any registered car, grouped by class, Stock/Street/Race tune) and Open (bring a car you own, class-gated).
 - Autosensed integrations: qbx_core, Renewed-Banking, qbx_management, jg-advancedgarages, wasabi_carlock, ox_fuel, ox_target, ox_lib.
 - No scan loops: NUI HUD, lib.zones pit boxes, lib.points markers, idle leaderboard pushed on change.
 - Staff: boss-menu "Raceway Control" and `/raceway`; fee/purse overrides persisted.
-- Stats table renamed to `dps_roxwoodracing_stats` (auto-migrated) with spec/open win counters.
+- Stats table renamed to `dps_proracing_stats` (auto-migrated) with spec/open win counters.
 - Removed: de/es/fr/ru locales, ESX-only branches that cannot run here, dead camera/feed hooks.
 ```
 
@@ -2791,13 +2791,13 @@ git commit -m "Leaderboard: idle board pushed once and on new records; names via
 
 ```bash
 git add README.md CHANGELOG.md docs/install.md
-git commit -m "Docs: README for dps-roxwoodracing 3.0, install notes, changelog"
+git commit -m "Docs: README for dps-proracing 3.0, install notes, changelog"
 T=$(ssh debian@10.10.10.10 'gh auth token')
-git push "https://x-access-token:${T}@github.com/DaemonAlex/dps-roxwoodracing.git" port-to-dps
-ssh debian@10.10.10.10 'gh pr create -R DaemonAlex/dps-roxwoodracing -B main -H port-to-dps -t "Port rox_speedway to dps-roxwoodracing 3.0" -F -' <<'EOF'
-Ports rox_speedway v2.4.2 into the [dps] layout per docs/superpowers/specs/2026-09-05-roxwoodracing-design.md.
+git push "https://x-access-token:${T}@github.com/DaemonAlex/dps-proracing.git" port-to-dps
+ssh debian@10.10.10.10 'gh pr create -R DaemonAlex/dps-proracing -B main -H port-to-dps -t "Port rox_speedway to dps-proracing 3.0" -F -' <<'EOF'
+Ports rox_speedway v2.4.2 into the [dps] layout per docs/superpowers/specs/2026-09-05-proracing-design.md.
 
-- roxwoodracing job + Renewed-Banking society money (fees, pool, purse)
+- proracing job + Renewed-Banking society money (fees, pool, purse)
 - Spec lobbies (any registered car, tune presets) and Open lobbies (own car)
 - autosensed integrations, no scan loops, NUI HUD, pit zones
 - stats table migration, staff controls, boss menu item
@@ -2816,32 +2816,32 @@ Each step is one change, reported before the next (standing rule). All commands 
 - [ ] **Step 1: Bench the old resource, install the new one**
 
 ```bash
-sudo mkdir -p /opt/fivem/backups/roxwoodracing-20260905
-sudo mv "/opt/fivem/server-data/resources/[dps]/rox_speedway" /opt/fivem/backups/roxwoodracing-20260905/rox_speedway
+sudo mkdir -p /opt/fivem/backups/proracing-20260905
+sudo mv "/opt/fivem/server-data/resources/[dps]/rox_speedway" /opt/fivem/backups/proracing-20260905/rox_speedway
 T=$(gh auth token)
-sudo git clone -b port-to-dps "https://x-access-token:${T}@github.com/DaemonAlex/dps-roxwoodracing.git" "/opt/fivem/server-data/resources/[dps]/dps-roxwoodracing"
-sudo git -C "/opt/fivem/server-data/resources/[dps]/dps-roxwoodracing" remote set-url origin https://github.com/DaemonAlex/dps-roxwoodracing.git
-sudo chown -R fivem:fivem "/opt/fivem/server-data/resources/[dps]/dps-roxwoodracing"
+sudo git clone -b port-to-dps "https://x-access-token:${T}@github.com/DaemonAlex/dps-proracing.git" "/opt/fivem/server-data/resources/[dps]/dps-proracing"
+sudo git -C "/opt/fivem/server-data/resources/[dps]/dps-proracing" remote set-url origin https://github.com/DaemonAlex/dps-proracing.git
+sudo chown -R fivem:fivem "/opt/fivem/server-data/resources/[dps]/dps-proracing"
 ```
 Report: old path → backup path, new path, branch, commit hash.
 
-- [ ] **Step 2: jobs.lua** — insert the block from `docs/install.md` §2 after the last job entry in `resources/[core]/[qbx]/qbx_core/shared/jobs.lua` (`.bak-roxwoodracing` copy first; `luac5.4 -p` the file after). Report the diff.
+- [ ] **Step 2: jobs.lua** — insert the block from `docs/install.md` §2 after the last job entry in `resources/[core]/[qbx]/qbx_core/shared/jobs.lua` (`.bak-proracing` copy first; `luac5.4 -p` the file after). Report the diff.
 
-- [ ] **Step 3: jg garage** — insert the block from `docs/install.md` §3 into `Config.GarageLocations` in `resources/[rp]/[world]/[jg-suite]/[jg]/jg-advancedgarages/config/config.lua` (`.bak-roxwoodracing` first; `luac5.4 -p` after). Report the diff.
+- [ ] **Step 3: jg garage** — insert the block from `docs/install.md` §3 into `Config.GarageLocations` in `resources/[rp]/[world]/[jg-suite]/[jg]/jg-advancedgarages/config/config.lua` (`.bak-proracing` first; `luac5.4 -p` after). Report the diff.
 
 - [ ] **Step 4: Reboot** — `fx restart` (whole server, announce it), then wait for `fx status` to report `port : 30120 listening`.
 
 - [ ] **Step 5: Proof (server side, quoted in the report)**
 
 ```bash
-fx bootlog | grep -n "dps-roxwoodracing" | head -40          # expect: framework qbx, notify ox_lib, target ox_target, keys wasabi_carlock, fuel ox_fuel, banking Renewed-Banking, garages jg-advancedgarages, bossmenu qbx_management, stats table ready, staff settings loaded, Started resource
+fx bootlog | grep -n "dps-proracing" | head -40          # expect: framework qbx, notify ox_lib, target ox_target, keys wasabi_carlock, fuel ox_fuel, banking Renewed-Banking, garages jg-advancedgarages, bossmenu qbx_management, stats table ready, staff settings loaded, Started resource
 fx bootlog | grep -n -i "error\|warn" | grep -i roxwood       # expect: nothing
-mysql -e "SHOW TABLES LIKE 'dps_roxwoodracing%'; SELECT COUNT(*) FROM dps_roxwoodracing_stats; SHOW TABLES LIKE 'speedway_stats';"   # expect: 2 tables, old row count preserved, old table gone
-mysql -e "SELECT id, amount FROM bank_accounts_new WHERE id='roxwoodracing';"   # expect: one row, amount 0
+mysql -e "SHOW TABLES LIKE 'dps_proracing%'; SELECT COUNT(*) FROM dps_proracing_stats; SHOW TABLES LIKE 'speedway_stats';"   # expect: 2 tables, old row count preserved, old table gone
+mysql -e "SELECT id, amount FROM bank_accounts_new WHERE id='proracing';"   # expect: one row, amount 0
 ```
 (mysql creds: `/root/qbox-credentials` on hv → LXC 201.)
 
-- [ ] **Step 6: In-game checks (Stor)** — from the spec §8: ped/grid/pit/LED placement on the fresh Roxwood, one Spec race and one Open race with two players. After the first race with a fee: `mysql -e "SELECT title, amount, trans_type FROM bank_transactions WHERE account='roxwoodracing' ORDER BY id DESC LIMIT 10"` — quote it.
+- [ ] **Step 6: In-game checks (Stor)** — from the spec §8: ped/grid/pit/LED placement on the fresh Roxwood, one Spec race and one Open race with two players. After the first race with a fee: `mysql -e "SELECT title, amount, trans_type FROM bank_transactions WHERE account='proracing' ORDER BY id DESC LIMIT 10"` — quote it.
 
 - [ ] **Step 7: Report** — one artifact section: what moved where, the two config diffs, the boot-log lines, the DB rows, what is still open (in-game checks).
 

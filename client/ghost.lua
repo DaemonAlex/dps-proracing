@@ -44,6 +44,6 @@ function Ghost.Start(myVeh)
   end)
 end
 
-RegisterNetEvent('dps-roxwoodracing:raceVehicles', function(list) Ghost.SetRaceVehicles(list) end)
-RegisterNetEvent('dps-roxwoodracing:client:unghost', function() Ghost.Stop() end)
-RegisterNetEvent('dps-roxwoodracing:client:setGhosted', function(on) if on then Ghost.Start(nil) else Ghost.Stop() end end)
+RegisterNetEvent('dps-proracing:raceVehicles', function(list) Ghost.SetRaceVehicles(list) end)
+RegisterNetEvent('dps-proracing:client:unghost', function() Ghost.Stop() end)
+RegisterNetEvent('dps-proracing:client:setGhosted', function(on) if on then Ghost.Start(nil) else Ghost.Stop() end end)
