@@ -4,6 +4,7 @@ local TABLE = 'dps_proracing_pitcars'
 PitCars = PitCars or {}
 
 function PitCars.Init()
+  Migrate.Carry(TABLE)
   MySQL.query.await(([[
     CREATE TABLE IF NOT EXISTS %s (
       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,

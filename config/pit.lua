@@ -1,28 +1,10 @@
 Config = Config or {}
 
 
+-- DPS 2026-11-12: empty until the pit boxes at Grand Senora are marked in game. With no zones
+-- there are no pit crews, and everything else runs. Each zone is:
+--   { coords = vector3(x, y, z), heading = 180.0, radius = 6.0 },
 Config.PitCrewZones = {
-    -- Zone #1 (replace coords with your pit‐lane location)
-    {  
-      coords = vector3(-2865.45, 8113.30, 43.74),   
-      heading = 180.0,    -- NPCs will face south
-      radius = 6.0  
-    },
-  
-    -- Zone #2
-    {  
-      coords = vector3(-2840.76, 8109.64, 43.55),   
-      heading = 180.0,    -- NPCs will face south
-      radius = 6.0  
-    },
-
-    -- Server owners can add more:  
-    -- Example zone #3 (replace coords with your pit‐lane location)
-    -- {  
-      -- coords = vector3(x, y, z),   
-      -- heading = 180.0,    -- NPCs will face south
-      -- radius = 6.0  
-    -- },
 }
 
 

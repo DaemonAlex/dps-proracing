@@ -2,7 +2,9 @@
 -- fees/purses become plain player cash (spec section 4) and a warning is printed at boot.
 Banking = {}
 Banking.Provider = 'none'
-if GetResourceState('Renewed-Banking') == 'started' or GetResourceState('Renewed-Banking') == 'starting' then
+-- wasabi_banking answers the Renewed-Banking export names (DPS 2026-11-12: it is what the server runs)
+if GetResourceState('wasabi_banking') == 'started' or GetResourceState('wasabi_banking') == 'starting'
+  or GetResourceState('Renewed-Banking') == 'started' or GetResourceState('Renewed-Banking') == 'starting' then
   Banking.Provider = 'Renewed-Banking'
 elseif GetResourceState('qb-banking') == 'started' then
   Banking.Provider = 'qb-banking'

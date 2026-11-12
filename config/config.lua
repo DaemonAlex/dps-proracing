@@ -69,14 +69,18 @@ Config.Leaderboard = {
     -- Where the physical sign stands (from stream/amir_speedway_sign.ymap). When a player
     -- comes within signRadius the texture replacement is re-applied, so a sign whose
     -- texture dictionary streamed in after the first attempt still shows the live board.
-    signCoords = vector3(-2869.0, 8427.4, 87.7),
+    -- DPS 2026-11-12: the board at Grand Senora is a placed sign (/placesign), kept in the database.
+    -- This point is only where the board's picture is refreshed from.
+    signCoords = vector3(1118.28, 2185.62, 51.62),
     signRadius = 300.0,
     -- Placed signs (/placesign at the other tracks): the LED panel plus a stand under it.
     -- height = how far above the director's feet the panel base sits; flip turns the panel
     -- to face the director's heading (the model faces away from its own heading).
     -- The raceway tower (Roxwood map entity 0xf1117f99 at the sign's x/y, ground 38.3; the
     -- panel sits 49.35 m above its origin). model may be a name or a joaat hash number.
-    signStand = { model = 0xf1117f99, height = 49.35, zOffset = 0.0, flip = true },
+    -- DPS 2026-11-12: no stand. The old one was the Roxwood raceway tower, a model from a map this
+    -- server no longer has, and it hung the panel 49 m in the air. The panel now stands on the ground.
+    signStand = { model = false, height = 0.0, zOffset = 0.0, flip = true },
     -- Sponsor slides for the three ad panels on the board (paths inside html/).
     adUrls = { "ads/dps_1.png", "ads/dps_2.png", "ads/dps_3.png" },
     -- Raceway mode at the other tracks (LS Circuit, Grand Senora): the board shows the

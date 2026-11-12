@@ -5,6 +5,7 @@ local TABLE = 'dps_proracing_signs'
 Signs = Signs or {}
 
 function Signs.Init()
+  Migrate.Carry(TABLE)
   MySQL.query.await(([[
     CREATE TABLE IF NOT EXISTS %s (
       track VARCHAR(40) NOT NULL PRIMARY KEY,

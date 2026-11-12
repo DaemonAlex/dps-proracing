@@ -1,17 +1,20 @@
 # dps-proracing
 
-Roxwood Raceway for Del Perro Sands. Lobby-based circuit racing with two modes, an AI practice grid that laps the circuit whenever nobody is racing, a practice mode with lap clock and adaptive AI, NPC pit crews, an in-world LED leaderboard, persistent career stats, staff controls, and a real business behind it: the `proracing` job, whose society account takes every entry fee and pays every purse.
+Circuit racing for Del Perro Sands, run at Grand Senora Raceway. Lobby-based circuit racing with two modes, an AI practice grid that laps the circuit whenever nobody is racing, a practice mode with lap clock and adaptive AI, NPC pit crews, an in-world LED leaderboard, persistent career stats, staff controls, and a real business behind it: the `proracing` job, whose society account takes every entry fee and pays every purse.
 
 Version 3.1.0. Descended from [max_rox_speedway](https://github.com/MaxSuperTech/max_rox_speedway) by MaxSuperTech, via rox_speedway (DrCannabis / DaemonAlex). Everything from v3.0 onward is the DPS port; the history is in `CHANGELOG.md`, the design in `docs/superpowers/specs/`, the build plan in `docs/superpowers/plans/`.
 
 ## Status
 
-Not running on DelPerroSands. The script was called dps-roxwoodracing until 12 November 2026.
+On DelPerroSands since 12 November 2026, set up for one raceway: Grand Senora (the WXMaps
+Grand Senora Raceway map, north of Sandy Shores). The script was called dps-roxwoodracing until
+that day. Nothing in it points at the Roxwood map any more.
 
-It cannot go back on the server as it stands. Every track position in it is on the Roxwood map,
-and DelPerroSands has no Roxwood content. It needs a track on a map the server has before it can
-run. The names in the code are done: the resource, its events, its job and its database tables
-are all `proracing` now, and old race stats carry over by themselves.
+**Not finished.** The layout in `config/tracks.lua` was built from a lap recorded on the old
+oval, before the new map went in. A Race Director has to drive one clean lap of the new track
+with `/recordline grandsenora`, then the layout is rebuilt from it (see "Setting up the track").
+The lobby host and the boss menu stand beside the start line for now, and there are no pit
+crews until the pit boxes are marked.
 
 ## What it is for
 
@@ -436,8 +439,35 @@ Syntax-checks every Lua file with `luac5.4 -p`, then runs `tests/run.lua`, which
 
 License: see `LICENSE`.
 
+## Setting up the track
+
+The whole race layout comes from one recorded lap.
+
+1. A Race Director drives to the start/finish line and types `/recordline grandsenora`.
+2. They drive one clean lap in the racing direction and stop where they began. The lap is saved
+   in the database.
+3. On the server, export that lap and rebuild the layout:
+
+   ```sh
+   mysql ... -N --raw -e "SELECT points FROM dps_proracing_lines WHERE name='grandsenora'" > lap.json
+   python3 tools/track_from_line.py lap.json --paddock X Y Z H
+   ```
+
+   `--paddock` is where the lobby host stands. Leave it out and the host stands beside the
+   start line. The tool writes `config/tracks.lua`: checkpoints every 180 m, the finish line,
+   an eight-place grid behind the line, and where a finished racer is put.
+4. Restart the script.
+
+The same lap drives the practice cars and the lap clock. `Config.Practice.onlyLines` in
+`config/practice.lua` keeps the script to lines named `grandsenora...`. Lines recorded at
+circuits the server no longer has stay in the database and are ignored.
+
+Still to mark in game: the pit boxes (`Config.PitCrewZones` in `config/pit.lua`) and the boss
+menu spot (`Config.Job.bossCoords` in `config/economy.lua`).
+
 ## Recent changes
 
+- **12 November 2026. One raceway: Grand Senora.** The four Roxwood layouts are gone. `config/tracks.lua` is now built from a recorded lap by `tools/track_from_line.py`. Only `grandsenora` lines are used. The LED board stands on the ground as a placed sign: its old stand was the Roxwood tower, which hung the panel 49 m in the air without that map. Prize cars go to the Sandy South garage. Society money now works with wasabi_banking. All five database tables carry over from their old names. Pit crews are off until the pit boxes are marked. The old layout file is kept as `config/tracks.roxwood.lua.txt` for reference.
 - **12 November 2026. Renamed to dps-proracing.** The resource name, events, the `proracing` job and the two database tables are renamed. Stats saved under the old table name are carried over at start. Tracked backup files are removed. The track data is still Roxwood and still needs replacing.
 - **12 November 2026.** README: status, what it is for, how it works alone and with paid scripts, other DPS scripts.
 - **25 October 2026.** Cars are balanced per class and per track, for the AI and for players.

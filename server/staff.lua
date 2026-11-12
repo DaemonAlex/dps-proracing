@@ -24,6 +24,7 @@ function Staff.SetSetting(k, v)
 end
 
 function Staff.LoadSettings()
+  Migrate.Carry(SETTINGS)
   MySQL.query.await(('CREATE TABLE IF NOT EXISTS %s (k VARCHAR(40) NOT NULL PRIMARY KEY, v VARCHAR(200))'):format(SETTINGS))
   local rows = MySQL.query.await(('SELECT k, v FROM %s'):format(SETTINGS)) or {}
   for _, r in ipairs(rows) do if keys[r.k] and tonumber(r.v) then keys[r.k](tonumber(r.v)) end end

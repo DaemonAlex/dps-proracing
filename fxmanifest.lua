@@ -43,6 +43,7 @@ server_scripts {
   'integrations/banking.lua',
   'integrations/garages.lua',
   'integrations/bossmenu.lua',
+  'server/migrate.lua',
   'server/stats.lua',
   'server/rewards.lua',
   'server/lobbies.lua',

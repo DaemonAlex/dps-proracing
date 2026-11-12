@@ -16,6 +16,10 @@ function CreateThread(fn) fn() end
 function Wait() end
 function joaat(s) return 0 end
 Locale = Locale or function(k) return k end
+vector3 = vector3 or function(x, y, z) return { x = x, y = y, z = z } end
+vector4 = vector4 or function(x, y, z, w) return { x = x, y = y, z = z, w = w } end
+-- table carry-over is tested on its own (test_migrate.lua); elsewhere it is a no-op
+Migrate = Migrate or { Carry = function() return false end }
 -- exports: exports['res']:Fn(...) and exports.res:Fn(...)
 exports = setmetatable({}, { __index = function(t, k) return STUB.exports and STUB.exports[k] end })
 lib = { callback = { register = function() end }, print = { warn = function() end, info = function() end } }
