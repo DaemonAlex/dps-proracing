@@ -80,7 +80,11 @@ Config.Leaderboard = {
     -- panel sits 49.35 m above its origin). model may be a name or a joaat hash number.
     -- DPS 2026-11-12: no stand. The old one was the Roxwood raceway tower, a model from a map this
     -- server no longer has, and it hung the panel 49 m in the air. The panel now stands on the ground.
-    signStand = { model = false, height = 0.0, zOffset = 0.0, flip = true },
+    -- DPS 2026-11-12 (Damon: "we are missing the tower"): a stand built from a prop the base
+    -- game already has. auto = stood on the ground and stacked `stack` times, with the panel set
+    -- on top, all worked out from the prop's own size. The first model the game has is used.
+    -- First try: change `stack` to raise or lower the board, or put another prop first.
+    signStand = { model = { 'prop_scafold_06c', 'prop_scafold_06a', 'prop_scafold_01a', 'prop_container_01a' }, auto = true, stack = 3, flip = true },
     -- Sponsor slides for the three ad panels on the board (paths inside html/).
     adUrls = { "ads/dps_1.png", "ads/dps_2.png", "ads/dps_3.png" },
     -- Raceway mode at the other tracks (LS Circuit, Grand Senora): the board shows the

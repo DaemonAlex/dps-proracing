@@ -22,31 +22,50 @@ local function place(row)
   -- at its base, so lift it by the model's lower extent and drop it on the ground from there.
   local mn, mx = GetModelDimensions(hash)
   local stand = (Config.Leaderboard and Config.Leaderboard.signStand) or {}
-  local lift = stand.height or 0.0
-  -- With a stand: the stand origin sits at the director's feet and the panel origin `height`
-  -- above it, the same offsets as the raceway ymap. Without one: the panel base on the ground.
-  local z = stand.model and (row.z + lift) or (row.z - mn.z)
   local heading = (row.h + (stand.flip and 180.0 or 0.0)) % 360.0
-  local obj = CreateObjectNoOffset(hash, row.x, row.y, z, false, false, false)
-  if obj == 0 then log('object create refused') return end
-  log(('sign for %s created at %.1f %.1f %.1f (model z extent %.2f..%.2f, lift %.1f, heading %.0f)'):format(row.track, row.x, row.y, z, mn.z, mx.z, lift, heading))
-  SetEntityHeading(obj, heading)
-  -- the stand: a vanilla prop under the panel (the raceway sign hangs off the map's own tower)
-  if stand.model then
-    local sh = type(stand.model) == 'number' and stand.model or joaat(stand.model)
+
+  -- The stand. `model` is one prop or a list (the first one the game has is used). With
+  -- `auto`, the prop is stood on the ground, stacked `stack` times, and the panel is set on
+  -- top, all from the prop's own size. Without `auto`, `height` and `zOffset` are used as given
+  -- (the old raceway-tower setup).
+  local standHash, standTop
+  local wanted = stand.model
+  if wanted and type(wanted) ~= 'table' then wanted = { wanted } end
+  for _, m in ipairs(wanted or {}) do
+    local sh = type(m) == 'number' and m or joaat(m)
     if IsModelValid(sh) then
       RequestModel(sh); local dl = GetGameTimer() + 5000
       while not HasModelLoaded(sh) and GetGameTimer() < dl do Wait(50) end
-      if HasModelLoaded(sh) then
-        local so = CreateObjectNoOffset(sh, row.x, row.y, row.z + (stand.zOffset or 0.0), false, false, false)
-        if so ~= 0 then
-          SetEntityHeading(so, heading); FreezeEntityPosition(so, true); SetEntityLodDist(so, 3000)
-          objects[row.track .. '#stand'] = so
-        end
-        SetModelAsNoLongerNeeded(sh)
-      end
-    else log(('stand model %s not valid'):format(tostring(stand.model))) end
+      if HasModelLoaded(sh) then standHash = sh break end
+    end
   end
+  if wanted and not standHash then log('no stand model is valid: the panel goes on the ground') end
+
+  if standHash then
+    local smn, smx = GetModelDimensions(standHash)
+    local pieces = stand.auto and math.max(1, math.floor(tonumber(stand.stack) or 1)) or 1
+    local pieceH = smx.z - smn.z
+    for i = 1, pieces do
+      local sz = stand.auto and (row.z - smn.z + (i - 1) * pieceH) or (row.z + (stand.zOffset or 0.0))
+      local so = CreateObjectNoOffset(standHash, row.x, row.y, sz, false, false, false)
+      if so ~= 0 then
+        SetEntityHeading(so, heading); FreezeEntityPosition(so, true); SetEntityLodDist(so, 3000)
+        objects[row.track .. '#stand' .. i] = so
+      end
+    end
+    if stand.auto then standTop = row.z + pieces * pieceH end
+    log(('stand: %d piece(s), each %.2f m tall'):format(pieces, pieceH))
+    SetModelAsNoLongerNeeded(standHash)
+  end
+
+  -- With an auto stand: the panel base on the stand's top. With a fixed stand: the panel origin
+  -- `height` above the director's feet. With no stand: the panel base on the ground.
+  local lift = stand.height or 0.0
+  local z = standTop and (standTop - mn.z) or (standHash and (row.z + lift)) or (row.z - mn.z)
+  local obj = CreateObjectNoOffset(hash, row.x, row.y, z, false, false, false)
+  if obj == 0 then log('object create refused') return end
+  log(('sign for %s created at %.1f %.1f %.1f (panel z extent %.2f..%.2f, heading %.0f)'):format(row.track, row.x, row.y, z, mn.z, mx.z, heading))
+  SetEntityHeading(obj, heading)
   FreezeEntityPosition(obj, true)
   SetEntityLodDist(obj, (Config.Leaderboard and Config.Leaderboard.signLodDistance) or 3000)
   SetModelAsNoLongerNeeded(hash)
@@ -68,10 +87,11 @@ local function arm()
         if not objects[row.track] or not DoesEntityExist(objects[row.track]) then CreateThread(function() place(row) end) end
       end,
       onExit = function()
-        for _, k in ipairs({ row.track, row.track .. '#stand' }) do
-          local o = objects[k]
-          if o and DoesEntityExist(o) then DeleteObject(o) end
-          objects[k] = nil
+        for k, o in pairs(objects) do
+          if k == row.track or k:sub(1, #row.track + 6) == row.track .. '#stand' then
+            if DoesEntityExist(o) then DeleteObject(o) end
+            objects[k] = nil
+          end
         end
       end,
     })
