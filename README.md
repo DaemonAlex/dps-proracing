@@ -4,6 +4,47 @@ Roxwood Raceway for Del Perro Sands. Lobby-based circuit racing with two modes, 
 
 Version 3.1.0. Descended from [max_rox_speedway](https://github.com/MaxSuperTech/max_rox_speedway) by MaxSuperTech, via rox_speedway (DrCannabis / DaemonAlex). Everything from v3.0 onward is the DPS port; the history is in `CHANGELOG.md`, the design in `docs/superpowers/specs/`, the build plan in `docs/superpowers/plans/`.
 
+## Status
+
+Not running on DelPerroSands. The Roxwood map was removed from the server on 31 October 2026, and
+the raceway stood on that map. The script was not in the server's resource list on 1 November
+2026. The code is complete (version 3.1.0, with balance work up to 25 October 2026). The server
+runs qs-advancedracing for racing now.
+
+## What it is for
+
+It runs Roxwood Raceway as a real place and a real business. Players race each other in lobbies,
+practise against AI cars when no race is on, and the `roxwoodracing` job takes the entry fees and
+pays the prizes.
+
+## On its own, and with other scripts
+
+**On its own.** It needs `ox_lib`, `oxmysql` and a framework (Qbox first, then QBCore, then ESX).
+A player walks up to the paddock ped, creates or joins a lobby and races. Pit crews refuel and
+repair. A sign at the track shows the running order. With no bank script found, entry fees and
+prizes are plain player cash and a warning prints at start.
+
+**With Renewed-Banking.** Fees go into the raceway's society account and prizes come out of it.
+DelPerroSands runs wasabi_banking, which this script does not detect. On this server it would
+fall back to player cash until a wasabi_banking option is added to `integrations/banking.lua`.
+
+**With a paid garage (jg-advancedgarages).** Race-only cars live in the paddock garage, and a
+prize car is delivered there.
+
+**With a paid key script (wasabi_carlock).** The driver gets keys to the track car at spawn.
+
+**With ox_fuel.** Track cars start full and a pit stop refuels them.
+
+**With ox_target.** The paddock ped is used with the eye. Without it the player presses a key
+when close.
+
+**With qbx_management.** Raceway Control shows in the boss menu.
+
+**What is out of date for DelPerroSands.** The lobby, grid, pit and sign positions in `config/`
+are on the Roxwood map, which is gone. The practice system also has settings for Grand Senora and
+the Los Santos Circuit. The Los Santos Circuit map was removed on 10 November 2026. The AI engine
+sounds come from a sound pack called dps-racesounds, which is not on the server.
+
 ---
 
 ## Contents
@@ -392,3 +433,51 @@ Syntax-checks every Lua file with `luac5.4 -p`, then runs `tests/run.lua`, which
 - DPS port and hardening: DPS Development
 
 License: see `LICENSE`.
+
+## Recent changes
+
+- **12 November 2026.** README: status, what it is for, how it works alone and with paid scripts, other DPS scripts.
+- **25 October 2026.** Cars are balanced per class and per track, for the AI and for players.
+- **12 October 2026.** Cars and peds are placed on the ground before they are frozen. Race cars
+  get more power and grip while on a track.
+- **4 October 2026.** Yosemite Rancher for game build 3095. DelPerroSands look on the panels.
+- **23 September 2026.** Three rally cars that are not installed were dropped from the Spec menu.
+  The LED sign is brighter at night. Signs sit on the ground correctly.
+- **8 and 9 September 2026.** LED signs at every track. Ten practice car sets across three
+  tracks.
+- **7 September 2026.** Version 3.1.0: the AI practice grid and practice mode.
+- **5 September 2026.** Version 3.0.0: renamed dps-roxwoodracing, with the raceway job and
+  society money.
+
+## Author
+
+Made by [DaemonAlex](https://github.com/DaemonAlex) for DelPerroSands.
+
+## Other DPS scripts
+
+All of these are made for DelPerroSands and run together on one Qbox server. Each one works on
+its own. The ones marked "pairs with" do more when both are running.
+
+| Script | What it does |
+|---|---|
+| [dps-inventory](https://github.com/DaemonAlex/dps-inventory) | The inventory: ox_inventory with equipment slots, backpacks, armour plates and a self status panel, in the DelPerroSands colours. |
+| [dps-medical](https://github.com/DaemonAlex/dps-medical) | Patient records, illness and diagnostic tests. A companion to wasabi_ambulance. Pairs with dps-inventory: symptoms and diagnoses show on the status panel. |
+| [dps-insurance](https://github.com/DaemonAlex/dps-insurance) | Ties m-Insurance into the MDT, impound, hospital and medical chart. Pairs with dps-medical. |
+| [dps-studio](https://github.com/DaemonAlex/dps-studio) | Build rooms, doors and portals in game from one panel (`/studio`), with owners and managers so staff do not have to support them. |
+| [dps-shops](https://github.com/DaemonAlex/dps-shops) | Shop clerks who greet and react to a robbery, then player-owned shops. |
+| [dps-fleet](https://github.com/DaemonAlex/dps-fleet) | Vehicle browser and workshop on one panel: extras, liveries and mods for emergency vehicles. |
+| [dps-parking](https://github.com/DaemonAlex/dps-parking) | Parking with valet, impound, violations and reserved spots. |
+| [dps-vehiclepersistence](https://github.com/DaemonAlex/dps-vehiclepersistence) | Vehicles stay where they were parked. Pairs with dps-parking. |
+| [dps-towjob](https://github.com/DaemonAlex/dps-towjob) | Queue-based tow job with jg-mechanic integration. |
+| [dps-services](https://github.com/DaemonAlex/dps-services) | Request a tow and follow it live on the lb-phone and lb-tablet. Pairs with dps-towjob. |
+| [dps-autoshops](https://github.com/DaemonAlex/dps-autoshops) | Self-service repair shops when no mechanic is on duty. |
+| [dps-cityworker](https://github.com/DaemonAlex/dps-cityworker) | City infrastructure job and career. |
+| [dps-ainpcs](https://github.com/DaemonAlex/dps-ainpcs) | NPCs you can talk to, with trust, quests and intel. |
+| [dps-badpeds](https://github.com/DaemonAlex/dps-badpeds) | Police interaction with NPCs: stops, arrests, intel and jail records. |
+| [dps-gangwars](https://github.com/DaemonAlex/dps-gangwars) | Ambient gang NPCs, territory population and war reinforcements. |
+| [dps-rotations](https://github.com/DaemonAlex/dps-rotations) | Moves dealers, harvests and other spots on a fixed schedule. |
+| [dps-trains](https://github.com/DaemonAlex/dps-trains) | The train system. Pairs with dps-trains-stock, dps-traintools and dps-transitapp. |
+| [dps-transitapp](https://github.com/DaemonAlex/dps-transitapp) | Live train arrival boards on the lb-phone. |
+| [dps-faceplant](https://github.com/DaemonAlex/dps-faceplant) | City help, reports and staff tools on the lb-phone and lb-tablet. |
+| [dps-chat](https://github.com/DaemonAlex/dps-chat) | A command box for voice-only servers. No chat feed. |
+| [dps-filmmode](https://github.com/DaemonAlex/dps-filmmode) | One key hides every HUD layer and gives a smooth free camera for recording. |
