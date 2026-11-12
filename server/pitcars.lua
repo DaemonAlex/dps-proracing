@@ -16,8 +16,20 @@ function PitCars.Init()
   ]]):format(TABLE))
 end
 
+-- Pit cars parked further than this from the start line belong to a circuit the server no
+-- longer runs. They stay in the database and are not spawned.
+local NEAR = (Config.Practice and Config.Practice.trackJoinRadius) or 1500.0
+
 function PitCars.List()
-  return MySQL.query.await(('SELECT id, model, x, y, z, h FROM %s ORDER BY id'):format(TABLE)) or {}
+  local rows = MySQL.query.await(('SELECT id, model, x, y, z, h FROM %s ORDER BY id'):format(TABLE)) or {}
+  local start = Config.StartLinePoints and Config.StartLinePoints[1]
+  if not start then return rows end
+  local out = {}
+  for _, r in ipairs(rows) do
+    local dx, dy = (r.x or 0) - start.x, (r.y or 0) - start.y
+    if dx * dx + dy * dy <= NEAR * NEAR then out[#out + 1] = r end
+  end
+  return out
 end
 
 local function num(v) return type(v) == 'number' and v == v and math.abs(v) < 1e6 end
