@@ -11,10 +11,11 @@ Config.Stats = {
 
 Config.Job = {
   name   = 'proracing',
-  label  = 'Roxwood Raceway',
+  label  = 'Grand Senora Raceway',
   grades = { marshal = 0, pitcrew = 1, director = 2, owner = 3 },
   -- Boss menu zone at the paddock office (next to the lobby ped)
-  bossCoords = vector3(-2903.5, 8079.2, 44.5),
+  -- PROVISIONAL (DPS 2026-11-12): beside the lobby host. Set the real office spot after an in-game look.
+  bossCoords = vector3(1137.3, 2264.2, 52.4),
 }
 
 Config.Economy = {
@@ -25,7 +26,7 @@ Config.Economy = {
   participationReward = 500,
   bestLapBonus        = 1000,
   vehiclePrize        = nil,        -- e.g. 'sultan3'; nil = off
-  prizeGarage         = 'Roxwood Raceway',
+  prizeGarage         = 'Sandy South',   -- DPS 2026-11-12: the nearest garage to Grand Senora (was 'Roxwood Raceway', a garage that no longer exists)
   moneyType           = 'cash',     -- player side of every transaction
   minPlayersForPurse  = 2,          -- solo races pay the buy-in pool only (no purse farming)
   maxStaffSetting     = 1000000,    -- ceiling for any fee/purse value set from Raceway Control

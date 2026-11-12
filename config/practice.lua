@@ -18,6 +18,10 @@ Config.Practice = {
 -- within this many metres of the track's centre. Each track gets its own zone, host, grid,
 -- start line and lap clock, so a second circuit only needs its own /recordline.
 Config.Practice.trackJoinRadius = 1500.0
+-- DelPerroSands runs one raceway: Grand Senora (the WXMaps map north of Sandy Shores). Only
+-- lines whose name starts with one of these are used. Lines recorded at other circuits stay
+-- in the database and are ignored. Set to nil to use every stored line.
+Config.Practice.onlyLines = { 'grandsenora' }
 -- Map blip per track (sprite 315), placed at the track centre. The raceway nearest the LED
 -- sign keeps its paddock blip from the lobby NPC instead. Names by track id (the base name
 -- of the track's first recorded line); an id without an entry shows as "<Id> Raceway".

@@ -5,6 +5,7 @@ local TABLE = 'dps_proracing_signs'
 Signs = Signs or {}
 
 function Signs.Init()
+  Migrate.Carry(TABLE)
   MySQL.query.await(([[
     CREATE TABLE IF NOT EXISTS %s (
       track VARCHAR(40) NOT NULL PRIMARY KEY,
@@ -15,8 +16,16 @@ function Signs.Init()
   ]]):format(TABLE))
 end
 
+-- Signs at tracks this server no longer runs stay in the database and are not placed
+-- (Config.Practice.onlyLines, the same rule the practice lines follow).
 function Signs.List()
-  return MySQL.query.await(('SELECT track, x, y, z, h FROM %s ORDER BY track'):format(TABLE)) or {}
+  local rows = MySQL.query.await(('SELECT track, x, y, z, h FROM %s ORDER BY track'):format(TABLE)) or {}
+  if not (Lines and Lines.Allowed) then return rows end
+  local out = {}
+  for _, r in ipairs(rows) do
+    if Lines.Allowed(r.track) then out[#out + 1] = r end
+  end
+  return out
 end
 
 local function num(v) return type(v) == 'number' and v == v and math.abs(v) < 1e6 end

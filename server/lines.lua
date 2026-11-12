@@ -6,6 +6,7 @@ Lines.TABLE = TABLE
 local cache = {}
 
 function Lines.Init()
+  Migrate.Carry(TABLE)
   MySQL.query.await(([[
     CREATE TABLE IF NOT EXISTS %s (
       name VARCHAR(40) NOT NULL PRIMARY KEY,
@@ -33,8 +34,26 @@ function Lines.Get(name)
   return json.decode(row.points), row.point_count, closed
 end
 
+-- Config.Practice.onlyLines: when set, lines whose name does not start with one of these are
+-- left in the database and ignored. DelPerroSands runs one raceway, so lines recorded at
+-- circuits that are no longer on the server stay out of the way without being deleted.
+local function allowed(name)
+  local only = Config.Practice and Config.Practice.onlyLines
+  if not only or #only == 0 then return true end
+  for _, prefix in ipairs(only) do
+    if name:sub(1, #prefix) == prefix then return true end
+  end
+  return false
+end
+Lines.Allowed = allowed
+
 function Lines.List()
-  return MySQL.query.await(('SELECT name, point_count, closed, created_at FROM %s ORDER BY name'):format(TABLE)) or {}
+  local rows = MySQL.query.await(('SELECT name, point_count, closed, created_at FROM %s ORDER BY name'):format(TABLE)) or {}
+  local out = {}
+  for _, r in ipairs(rows) do
+    if allowed(r.name) then out[#out + 1] = r end
+  end
+  return out
 end
 
 RegisterNetEvent('dps-proracing:line:save', function(name, points)

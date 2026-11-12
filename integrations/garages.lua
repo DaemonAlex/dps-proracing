@@ -8,7 +8,7 @@ function Garages.GiveVehicle(pid, model, plate)
   local cid = Bridge.GetPlayerIdentifier(pid)
   if not cid then return false end
   local license = GetPlayerIdentifierByType(pid, 'license') or ''
-  local garage = Config.Economy.prizeGarage or 'Roxwood Raceway'
+  local garage = Config.Economy.prizeGarage or 'Sandy South'
   if Bridge.Framework == 'esx' then
     MySQL.insert.await('INSERT INTO owned_vehicles (owner, plate, vehicle, stored) VALUES (?, ?, ?, 1)',
       { cid, plate, json.encode({ model = joaat(model), plate = plate }) })
