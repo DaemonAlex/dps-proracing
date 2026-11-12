@@ -3,7 +3,7 @@
 -- applies to the model, so every placed sign shows this client's board.
 local SIGN_MODEL = 'amir_speedway_led'
 local objects, points, rows = {}, {}, {}
-local function log(msg) print('[dps-roxwoodracing] signs: ' .. msg) end
+local function log(msg) print('[dps-proracing] signs: ' .. msg) end
 
 local function clear()
   for _, p in ipairs(points) do p:remove() end
@@ -51,12 +51,12 @@ local function place(row)
   SetEntityLodDist(obj, (Config.Leaderboard and Config.Leaderboard.signLodDistance) or 3000)
   SetModelAsNoLongerNeeded(hash)
   objects[row.track] = obj
-  TriggerEvent('dps-roxwoodracing:sign:nearby')      -- leaderboard re-applies the texture
+  TriggerEvent('dps-proracing:sign:nearby')      -- leaderboard re-applies the texture
 end
 
 local function arm()
   clear()
-  rows = lib.callback.await('dps-roxwoodracing:sign:list', false)
+  rows = lib.callback.await('dps-proracing:sign:list', false)
   if type(rows) ~= 'table' then log('no rows from server') return end
   log(('%d sign(s) stored'):format(#rows))
   for _, row in ipairs(rows) do
@@ -84,8 +84,8 @@ CreateThread(function()
   arm()
 end)
 
-RegisterNetEvent('dps-roxwoodracing:sign:changed', function() arm() end)
-RegisterNetEvent('dps-roxwoodracing:sign:result', function(ok, msg)
+RegisterNetEvent('dps-proracing:sign:changed', function() arm() end)
+RegisterNetEvent('dps-proracing:sign:result', function(ok, msg)
   Notify(Config.Job.label, msg, ok and 'success' or 'error', 7000)
 end)
 
@@ -97,14 +97,14 @@ RegisterCommand('placesign', function(_, args)
   end
   local track = PracticeCurrentTrack and PracticeCurrentTrack()
   if not track then Notify(Config.Job.label, Locale('sign_no_track'), 'error') return end
-  if args[1] == 'clear' then TriggerServerEvent('dps-roxwoodracing:sign:clear', track) return end
+  if args[1] == 'clear' then TriggerServerEvent('dps-proracing:sign:clear', track) return end
   local ped = PlayerPedId()
   local c = GetEntityCoords(ped)
   -- Store the ground under the director, not the ped root (which sits about a metre up):
   -- place() treats the stored z as ground level for the stand.
   local found, groundZ = GetGroundZFor_3dCoord(c.x, c.y, c.z + 0.5, false)
   local z = found and groundZ or (c.z - 1.0)
-  TriggerServerEvent('dps-roxwoodracing:sign:place', track, c.x, c.y, z, GetEntityHeading(ped))
+  TriggerServerEvent('dps-proracing:sign:place', track, c.x, c.y, z, GetEntityHeading(ped))
 end, false)
 
 RegisterCommand('signstatus', function()

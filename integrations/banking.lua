@@ -7,9 +7,9 @@ if GetResourceState('Renewed-Banking') == 'started' or GetResourceState('Renewed
 elseif GetResourceState('qb-banking') == 'started' then
   Banking.Provider = 'qb-banking'
 end
-print(('[dps-roxwoodracing] banking: %s'):format(Banking.Provider))
+print(('[dps-proracing] banking: %s'):format(Banking.Provider))
 if Banking.Provider == 'none' then
-  print('[dps-roxwoodracing] WARNING: no society banking found; entry fees and purses fall back to player cash')
+  print('[dps-proracing] WARNING: no society banking found; entry fees and purses fall back to player cash')
 end
 
 local function rb() return exports['Renewed-Banking'] end
@@ -17,7 +17,7 @@ local function rb() return exports['Renewed-Banking'] end
 function Banking.EnsureAccount(name, label)
   if Banking.Provider == 'Renewed-Banking' then
     local ok, res = pcall(function() return rb():CreateJobAccount({ name = name, label = label }, 0) end)
-    if not ok then print('[dps-roxwoodracing] CreateJobAccount failed: ' .. tostring(res)) end
+    if not ok then print('[dps-proracing] CreateJobAccount failed: ' .. tostring(res)) end
     return ok and res ~= nil
   elseif Banking.Provider == 'qb-banking' then
     pcall(function() exports['qb-banking']:CreateJobAccount(name, 0) end)

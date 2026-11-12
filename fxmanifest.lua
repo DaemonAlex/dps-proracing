@@ -2,9 +2,9 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-name 'dps-roxwoodracing'
+name 'dps-proracing'
 author 'DPS Development (base: max_rox_speedway by MaxSuperTech, rox_speedway by DrCannabis/DaemonAlex)'
-description 'Roxwood Raceway: lobbies, Spec and Open races, pit crews, LED leaderboard, society-funded purses'
+description 'Pro racing: lobbies, Spec and Open races, pit crews, LED leaderboard, society-funded purses'
 version '3.1.0'
 
 shared_scripts {

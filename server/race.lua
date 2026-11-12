@@ -8,7 +8,7 @@
 -- server-side notification helper (routes through client Notify)
 --------------------------------------------------------------------------------
 local function ServerNotify(target, title, description, ntype, duration)
-  TriggerClientEvent('dps-roxwoodracing:client:notify', target, title, description, ntype, duration)
+  TriggerClientEvent('dps-proracing:client:notify', target, title, description, ntype, duration)
 end
 
 --------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ local function findLobbyByPlayer(pid)
   return nil, nil
 end
 
--- Helper: build the payload sent to clients in dps-roxwoodracing:updateLobbyInfo.
+-- Helper: build the payload sent to clients in dps-proracing:updateLobbyInfo.
 -- Resolves names via the framework bridge so RP servers see character names
 -- (e.g. "John Smith") instead of Steam display names.
 local function buildLobbyInfo(lobbyName, lob)
@@ -168,7 +168,7 @@ local function PromoteSign(lobbyName)
   if primaryLobby ~= lobbyName then return end
   primaryLobby = nil
   for n, l in pairs(lobbies) do if l.isStarted then primaryLobby = n break end end
-  if Config.Leaderboard and Config.Leaderboard.enabled and not primaryLobby then exports['dps-roxwoodracing']:ShowIdleLeaderboard() end
+  if Config.Leaderboard and Config.Leaderboard.enabled and not primaryLobby then exports['dps-proracing']:ShowIdleLeaderboard() end
 end
 
 local FinishRaceIfDone -- defined with lapPassed below
@@ -200,17 +200,17 @@ function Race.EndLobby(lobbyName, reason)
   if not lob then return end
   for _, pid in ipairs(lob.players) do
     if not lob.raceLive then RefundLobbyFee(lob, lobbyName, pid) end
-    TriggerClientEvent('dps-roxwoodracing:kickedFromLobby', pid, lobbyName, reason or 'ended')
-    TriggerClientEvent('dps-roxwoodracing:client:destroyprops', pid)
-    TriggerClientEvent('dps-roxwoodracing:updateLobbyInfo', pid, nil)
-    if lob.raceLive then TriggerClientEvent('dps-roxwoodracing:client:finishTeleport', pid, Config.outCoords, lob.mode == 'open') end
+    TriggerClientEvent('dps-proracing:kickedFromLobby', pid, lobbyName, reason or 'ended')
+    TriggerClientEvent('dps-proracing:client:destroyprops', pid)
+    TriggerClientEvent('dps-proracing:updateLobbyInfo', pid, nil)
+    if lob.raceLive then TriggerClientEvent('dps-proracing:client:finishTeleport', pid, Config.outCoords, lob.mode == 'open') end
     DeleteSpawnedVehicle(lob, pid)
   end
   pendingChoices[lobbyName] = nil
   amirState[lobbyName] = nil
   lobbies[lobbyName] = nil
   SyncPracticeState()
-  TriggerClientEvent('dps-roxwoodracing:setLobbyState', -1, next(lobbies) ~= nil)
+  TriggerClientEvent('dps-proracing:setLobbyState', -1, next(lobbies) ~= nil)
   PromoteSign(lobbyName)
 end
 
@@ -219,7 +219,7 @@ math.randomseed(GetGameTimer())
 --------------------------------------------------------------------------------
 -- callbacks for client queries
 --------------------------------------------------------------------------------
-lib.callback.register("dps-roxwoodracing:getLobbies", function(source)
+lib.callback.register("dps-proracing:getLobbies", function(source)
   local result = {}
   for name, lobby in pairs(lobbies) do
     table.insert(result, {
@@ -231,7 +231,7 @@ lib.callback.register("dps-roxwoodracing:getLobbies", function(source)
   return result
 end)
 
-lib.callback.register("dps-roxwoodracing:getLobbyPlayers", function(source, lobbyName)
+lib.callback.register("dps-proracing:getLobbyPlayers", function(source, lobbyName)
   local lobby = lobbies[lobbyName]
   return lobby and lobby.players or {}
 end)
@@ -239,7 +239,7 @@ end)
 --------------------------------------------------------------------------------
 -- CREATE LOBBY
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:createLobby", function(args)
+RegisterNetEvent("dps-proracing:createLobby", function(args)
   local src = source
   if RateLimit(src, "createLobby", 2000) then return end
   local ok, errKey, c = Validate.CreateArgs(args, Config)
@@ -267,14 +267,14 @@ RegisterNetEvent("dps-roxwoodracing:createLobby", function(args)
   if Config.DebugPrints then print("[DEBUG] Lobby created: " .. c.name .. " mode=" .. c.mode) end
   ServerNotify(src, Config.Job.label, Locale("lobby_created", c.name), 'success')
   if PracticeServer and PracticeServer.RaceForming then PracticeServer.RaceForming(c.name) end
-  TriggerClientEvent('dps-roxwoodracing:updateLobbyInfo', src, buildLobbyInfo(c.name, lobbies[c.name]))
-  TriggerClientEvent('dps-roxwoodracing:setLobbyState', -1, next(lobbies) ~= nil)
+  TriggerClientEvent('dps-proracing:updateLobbyInfo', src, buildLobbyInfo(c.name, lobbies[c.name]))
+  TriggerClientEvent('dps-proracing:setLobbyState', -1, next(lobbies) ~= nil)
 end)
 
 --------------------------------------------------------------------------------
 -- JOIN LOBBY
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:joinLobby", function(lobbyName, vehicle)
+RegisterNetEvent("dps-proracing:joinLobby", function(lobbyName, vehicle)
   local src   = source
   if RateLimit(src, "joinLobby", 1000) then return end
 
@@ -320,21 +320,21 @@ RegisterNetEvent("dps-roxwoodracing:joinLobby", function(lobbyName, vehicle)
     -- BROADCAST who joined
     local playerName = Bridge.GetPlayerName(src)
     for _, id in ipairs(lobby.players) do
-      TriggerClientEvent("dps-roxwoodracing:client:playerJoined", id, playerName)
+      TriggerClientEvent("dps-proracing:client:playerJoined", id, playerName)
     end
   end
 
   -- update everyone's lobby info
   local info = buildLobbyInfo(lobbyName, lobby)
   for _, id in ipairs(lobby.players) do
-    TriggerClientEvent("dps-roxwoodracing:updateLobbyInfo", id, info)
+    TriggerClientEvent("dps-proracing:updateLobbyInfo", id, info)
   end
 end)
 
 --------------------------------------------------------------------------------
 -- CHECKPOINT PASSED (improves ranking during a lap)
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:checkpointPassed", function(lobbyName, idx)
+RegisterNetEvent("dps-proracing:checkpointPassed", function(lobbyName, idx)
   local src = source
   if RateLimit(src, "checkpointPassed", 200) then return end
 
@@ -361,7 +361,7 @@ RegisterNetEvent("dps-roxwoodracing:checkpointPassed", function(lobbyName, idx)
     if allPast then
       lob.ghostActive = false
       for _, pid in ipairs(lob.players) do
-        TriggerClientEvent("dps-roxwoodracing:client:unghost", pid)
+        TriggerClientEvent("dps-proracing:client:unghost", pid)
       end
     end
   end
@@ -370,7 +370,7 @@ end)
 --------------------------------------------------------------------------------
 -- LEAVE LOBBY
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:leaveLobby", function()
+RegisterNetEvent("dps-proracing:leaveLobby", function()
   local src = source
   if RateLimit(src, "leaveLobby", 1000) then return end
 
@@ -388,8 +388,8 @@ RegisterNetEvent("dps-roxwoodracing:leaveLobby", function()
         if lobby.isStarted then
           -- Leaver after the start button: clean their client, delete a spec car, and see if the race is now over
           DeleteSpawnedVehicle(lobby, src)
-          TriggerClientEvent("dps-roxwoodracing:client:destroyprops", src)
-          if lobby.raceLive then TriggerClientEvent("dps-roxwoodracing:client:finishTeleport", src, Config.outCoords, lobby.mode == 'open') end
+          TriggerClientEvent("dps-proracing:client:destroyprops", src)
+          if lobby.raceLive then TriggerClientEvent("dps-proracing:client:finishTeleport", src, Config.outCoords, lobby.mode == 'open') end
           local pc = pendingChoices[name]
           if pc then
             pc.total = math.max(0, pc.total - 1)
@@ -406,7 +406,7 @@ RegisterNetEvent("dps-roxwoodracing:leaveLobby", function()
           for _, player in ipairs(lobby.players) do
             RefundLobbyFee(lobby, name, player)
             ServerNotify(player, Config.Job.label, Locale("lobby_closed_by_owner", name), 'warning')
-            TriggerClientEvent("dps-roxwoodracing:updateLobbyInfo", player, nil)
+            TriggerClientEvent("dps-proracing:updateLobbyInfo", player, nil)
           end
           amirState[name] = nil
           lobbies[name] = nil
@@ -416,13 +416,13 @@ RegisterNetEvent("dps-roxwoodracing:leaveLobby", function()
           -- member left → update remaining
           local info = buildLobbyInfo(name, lobby)
           for _, player in ipairs(lobby.players) do
-            TriggerClientEvent("dps-roxwoodracing:updateLobbyInfo", player, info)
+            TriggerClientEvent("dps-proracing:updateLobbyInfo", player, info)
           end
         end
 
         -- clear leaver’s UI
-        TriggerClientEvent("dps-roxwoodracing:updateLobbyInfo", src, nil)
-        TriggerClientEvent("dps-roxwoodracing:setLobbyState", -1, next(lobbies) ~= nil)
+        TriggerClientEvent("dps-proracing:updateLobbyInfo", src, nil)
+        TriggerClientEvent("dps-proracing:setLobbyState", -1, next(lobbies) ~= nil)
         return
       end
     end
@@ -453,8 +453,8 @@ local function SpawnRaceVehicles(lobbyName, lob, selected)
     if not m then
       -- Slot closed on them (host left mid-picker etc.): refund and drop, never a silent skip
       RefundLobbyFee(lob, lobbyName, pid)
-      TriggerClientEvent('dps-roxwoodracing:kickedFromLobby', pid, lobbyName, 'nopick')
-      TriggerClientEvent('dps-roxwoodracing:updateLobbyInfo', pid, nil)
+      TriggerClientEvent('dps-proracing:kickedFromLobby', pid, lobbyName, 'nopick')
+      TriggerClientEvent('dps-proracing:updateLobbyInfo', pid, nil)
       failed[#failed+1] = pid
     else
       local sp = Config.GridSpawnPoints[idx]
@@ -463,11 +463,11 @@ local function SpawnRaceVehicles(lobbyName, lob, selected)
       local deadline = GetGameTimer() + 5000
       while (not veh or veh == 0 or not DoesEntityExist(veh)) and GetGameTimer() < deadline do Wait(50) end
       if not veh or veh == 0 or not DoesEntityExist(veh) then
-        print(('[dps-roxwoodracing] spawn failed for model %s (player %s); removing from race'):format(tostring(m), tostring(pid)))
+        print(('[dps-proracing] spawn failed for model %s (player %s); removing from race'):format(tostring(m), tostring(pid)))
         ServerNotify(pid, Config.Job.label, Locale('race_cancelled'), 'error')
         RefundLobbyFee(lob, lobbyName, pid)
-        TriggerClientEvent('dps-roxwoodracing:kickedFromLobby', pid, lobbyName, 'spawn')
-        TriggerClientEvent('dps-roxwoodracing:updateLobbyInfo', pid, nil)
+        TriggerClientEvent('dps-proracing:kickedFromLobby', pid, lobbyName, 'spawn')
+        TriggerClientEvent('dps-proracing:updateLobbyInfo', pid, nil)
         failed[#failed+1] = pid
         goto nextPlayer
       end
@@ -477,9 +477,9 @@ local function SpawnRaceVehicles(lobbyName, lob, selected)
       local plate = Plates.FromName(first, last, GetPlayerName(pid), usedPlates)
       SetVehicleNumberPlateText(veh, plate)
       SetVehicleDoorsLocked(veh, 1)
-      TriggerClientEvent("dps-roxwoodracing:client:fillFuel", pid, netId)
-      TriggerClientEvent("dps-roxwoodracing:client:giveKeys", pid, netId, plate)
-      TriggerClientEvent("dps-roxwoodracing:prepareStart", pid, {
+      TriggerClientEvent("dps-proracing:client:fillFuel", pid, netId)
+      TriggerClientEvent("dps-proracing:client:giveKeys", pid, netId, plate)
+      TriggerClientEvent("dps-proracing:prepareStart", pid, {
         track = lob.track,
         laps  = lob.laps,
         netId = netId,
@@ -505,7 +505,7 @@ local function SpawnRaceVehicles(lobbyName, lob, selected)
   SyncPracticeState()
 
   -- Broadcast all race vehicle netIds to all clients (clients ignore if not inRace)
-  TriggerClientEvent("dps-roxwoodracing:raceVehicles", -1, spawnedNetIds)
+  TriggerClientEvent("dps-proracing:raceVehicles", -1, spawnedNetIds)
 
   -- Start-of-race ghosting
   if Config.Ghosting.enabled and Config.Ghosting.startGhosted then
@@ -517,7 +517,7 @@ local function SpawnRaceVehicles(lobbyName, lob, selected)
       if lob.ghostActive then
         lob.ghostActive = false
         for _, pid in ipairs(lob.players) do
-          TriggerClientEvent("dps-roxwoodracing:client:unghost", pid)
+          TriggerClientEvent("dps-proracing:client:unghost", pid)
         end
       end
     end)
@@ -541,7 +541,7 @@ local function StartOpenRace(lobbyName, lob)
     local v = lob.vehicles[pid]
     local sp = Config.GridSpawnPoints[idx]
     if v and sp then
-      TriggerClientEvent('dps-roxwoodracing:prepareStart', pid, {
+      TriggerClientEvent('dps-proracing:prepareStart', pid, {
         track = lob.track, laps = lob.laps, netId = v.netId, plate = v.plate, mode = 'open', tune = 'Stock', keepVehicle = true, grid = sp,
       })
       netIds[#netIds+1] = { pid = pid, netId = v.netId }
@@ -549,12 +549,12 @@ local function StartOpenRace(lobbyName, lob)
   end
   lob.raceLive = true
   SyncPracticeState()
-  TriggerClientEvent('dps-roxwoodracing:raceVehicles', -1, netIds)
+  TriggerClientEvent('dps-proracing:raceVehicles', -1, netIds)
   if Config.Ghosting.enabled and Config.Ghosting.startGhosted then
     lob.ghostActive = true
     CreateThread(function()
       Wait(Config.Ghosting.unghostTimerSeconds * 1000)
-      if lob.ghostActive then lob.ghostActive = false; for _, pid in ipairs(lob.players) do TriggerClientEvent('dps-roxwoodracing:client:unghost', pid) end end
+      if lob.ghostActive then lob.ghostActive = false; for _, pid in ipairs(lob.players) do TriggerClientEvent('dps-proracing:client:unghost', pid) end end
     end)
   end
   CreateThread(function() Wait(8000); gridLocked = false end)
@@ -563,7 +563,7 @@ end
 --------------------------------------------------------------------------------
 -- START RACE & VEHICLE SELECTION
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:startRace", function(lobbyName)
+RegisterNetEvent("dps-proracing:startRace", function(lobbyName)
   local src = source
   if RateLimit(src, "startRace", 3000) then return end
 
@@ -601,7 +601,7 @@ RegisterNetEvent("dps-roxwoodracing:startRace", function(lobbyName)
 
   if Config.Leaderboard and Config.Leaderboard.enabled and isPrimary then
     -- Stop idle best-times display before switching to live race mode
-    exports['dps-roxwoodracing']:StopIdleLeaderboard()
+    exports['dps-proracing']:StopIdleLeaderboard()
 
     -- reset per-lobby AMIR state
     local vm = (amirState[lobbyName] and amirState[lobbyName].vm) or (Config.Leaderboard.viewMode or "toggle")
@@ -626,7 +626,7 @@ RegisterNetEvent("dps-roxwoodracing:startRace", function(lobbyName)
   end
 
   if lob.mode == 'open' then
-    for _, pid in ipairs(lob.players) do TriggerClientEvent("dps-roxwoodracing:hideLobbyWindow", pid) end
+    for _, pid in ipairs(lob.players) do TriggerClientEvent("dps-proracing:hideLobbyWindow", pid) end
     StartOpenRace(lobbyName, lob)
     return
   end
@@ -634,7 +634,7 @@ RegisterNetEvent("dps-roxwoodracing:startRace", function(lobbyName)
   pendingChoices[lobbyName] = { total = #lob.players, received = 0, selected = {} }
   -- Immediately hide lobby UI for all members
   for _, pid in ipairs(lob.players) do
-    TriggerClientEvent("dps-roxwoodracing:hideLobbyWindow", pid)
+    TriggerClientEvent("dps-proracing:hideLobbyWindow", pid)
   end
   -- Start a 30s vehicle selection countdown visible to players
   local deadline = GetGameTimer() + 30000
@@ -643,7 +643,7 @@ RegisterNetEvent("dps-roxwoodracing:startRace", function(lobbyName)
       local now = GetGameTimer()
       local remaining = math.max(0, math.floor((deadline - now) / 1000))
       for _, pid in ipairs(lob.players) do
-        TriggerClientEvent("dps-roxwoodracing:vehicleSelectCountdown", pid, remaining)
+        TriggerClientEvent("dps-proracing:vehicleSelectCountdown", pid, remaining)
       end
       if pendingChoices[lobbyName].received >= pendingChoices[lobbyName].total then
         -- everyone selected; stop countdown
@@ -666,8 +666,8 @@ RegisterNetEvent("dps-roxwoodracing:startRace", function(lobbyName)
         if not data.selected[pid] then
           ServerNotify(pid, Config.Job.label, Locale("vehicle_select_timeout"), 'warning')
           RefundLobbyFee(lob, lobbyName, pid)
-          TriggerClientEvent("dps-roxwoodracing:kickedFromLobby", pid, lobbyName, "timeout")
-          TriggerClientEvent("dps-roxwoodracing:updateLobbyInfo", pid, nil)
+          TriggerClientEvent("dps-proracing:kickedFromLobby", pid, lobbyName, "timeout")
+          TriggerClientEvent("dps-proracing:updateLobbyInfo", pid, nil)
           table.remove(lob.players, i)
           lob.vehicles[pid] = nil
         else
@@ -689,14 +689,14 @@ RegisterNetEvent("dps-roxwoodracing:startRace", function(lobbyName)
     end
   end)
   for _, pid in ipairs(lob.players) do
-    TriggerClientEvent("dps-roxwoodracing:chooseVehicle", pid, lobbyName, lob.class)
+    TriggerClientEvent("dps-proracing:chooseVehicle", pid, lobbyName, lob.class)
   end
 end)
 
 --------------------------------------------------------------------------------
 -- VEHICLE SELECTION RESPONSE
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:selectedVehicle", function(lobbyName, model)
+RegisterNetEvent("dps-proracing:selectedVehicle", function(lobbyName, model)
   local src  = source
   if RateLimit(src, "selectedVehicle", 1000) then return end
 
@@ -723,7 +723,7 @@ end)
 --------------------------------------------------------------------------------
 -- LIVE PROGRESS UPDATES
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:updateProgress", function(lobbyName, dist)
+RegisterNetEvent("dps-proracing:updateProgress", function(lobbyName, dist)
   local src = source
   if RateLimit(src, "updateProgress", 100) then return end
   local lob = lobbies[lobbyName]
@@ -760,7 +760,7 @@ RegisterNetEvent("dps-roxwoodracing:updateProgress", function(lobbyName, dist)
       lob.lastLeader = lob.lastLeader or -1
       if leaderId ~= lob.lastLeader then
         lob.lastLeader = leaderId
-        TriggerClientEvent('dps-roxwoodracing:leaderChanged', -1, lobbyName, leaderId)
+        TriggerClientEvent('dps-proracing:leaderChanged', -1, lobbyName, leaderId)
       end
     end
   end
@@ -782,7 +782,7 @@ RegisterNetEvent("dps-roxwoodracing:updateProgress", function(lobbyName, dist)
 
   for rank, e in ipairs(board) do
     local displayRank = (Config.RankingInvert and ((#board - rank) + 1)) or rank
-    TriggerClientEvent("dps-roxwoodracing:updatePosition", e.id, displayRank, #board)
+    TriggerClientEvent("dps-proracing:updatePosition", e.id, displayRank, #board)
   end
 
   -- Lapped-player ghosting: ghost players a full lap behind the leader
@@ -794,10 +794,10 @@ RegisterNetEvent("dps-roxwoodracing:updateProgress", function(lobbyName, dist)
       if isLapped and not wasGhosted then
         lob.lappedGhost = lob.lappedGhost or {}
         lob.lappedGhost[entry.id] = true
-        TriggerClientEvent("dps-roxwoodracing:client:setGhosted", entry.id, true)
+        TriggerClientEvent("dps-proracing:client:setGhosted", entry.id, true)
       elseif not isLapped and wasGhosted then
         lob.lappedGhost[entry.id] = nil
-        TriggerClientEvent("dps-roxwoodracing:client:setGhosted", entry.id, false)
+        TriggerClientEvent("dps-proracing:client:setGhosted", entry.id, false)
       end
     end
   end
@@ -904,7 +904,7 @@ end)
 --------------------------------------------------------------------------------
 -- LAP PASSED, LEADERBOARD UPDATE & RACE END
 --------------------------------------------------------------------------------
-RegisterNetEvent("dps-roxwoodracing:lapPassed", function(lobbyName)
+RegisterNetEvent("dps-proracing:lapPassed", function(lobbyName)
   local src = source
   if RateLimit(src, "lapPassed", 500) then return end
 
@@ -929,7 +929,7 @@ RegisterNetEvent("dps-roxwoodracing:lapPassed", function(lobbyName)
   -- notify client of the current lap to display: completed+1, clamped to total
   local displayLap = curLap + 1
   if displayLap > lob.laps then displayLap = lob.laps end
-  TriggerClientEvent("dps-roxwoodracing:updateLap", src, displayLap, lob.laps)
+  TriggerClientEvent("dps-proracing:updateLap", src, displayLap, lob.laps)
 
   -- reset per-lap progress counters so sorting is fair at the new lap start
   lob.checkpointProgress[src] = 0
@@ -943,9 +943,9 @@ RegisterNetEvent("dps-roxwoodracing:lapPassed", function(lobbyName)
       lob.finished[src] = true
 
       -- warp them back, fade in/out
-      TriggerClientEvent("dps-roxwoodracing:client:finishTeleport", src, Config.outCoords, lob.mode == 'open')
+      TriggerClientEvent("dps-proracing:client:finishTeleport", src, Config.outCoords, lob.mode == 'open')
       -- important “You finished!” toast
-      TriggerClientEvent("dps-roxwoodracing:youFinished", src)
+      TriggerClientEvent("dps-proracing:youFinished", src)
 
       -- push their personal result
       local totalT, best = 0, math.huge
@@ -954,7 +954,7 @@ RegisterNetEvent("dps-roxwoodracing:lapPassed", function(lobbyName)
       end
       if best == math.huge then best = 0 end
 
-      TriggerClientEvent("dps-roxwoodracing:finalRanking", src, {
+      TriggerClientEvent("dps-proracing:finalRanking", src, {
         position  = table_count(lob.finished),
         totalTime = totalT,
         lapTimes  = lob.lapTimes[src],
@@ -983,14 +983,14 @@ FinishRaceIfDone = function(lobbyName, lob)
 
     -- Broadcast expanded results to all race participants
     for _, pid in ipairs(lob.players) do
-      TriggerClientEvent("dps-roxwoodracing:finalRanking", pid, {
+      TriggerClientEvent("dps-proracing:finalRanking", pid, {
         allResults = results,
         bestLapPlayer = bestLapPlayer,
         mostImprovedPlayer = mostImprovedId,
         track = lob.track,
         purseCovered = purseCovered,
       })
-      TriggerClientEvent("dps-roxwoodracing:client:destroyprops", pid)
+      TriggerClientEvent("dps-proracing:client:destroyprops", pid)
     end
 
     -- Save persistent race stats for each player.
@@ -1010,7 +1010,7 @@ FinishRaceIfDone = function(lobbyName, lob)
     amirState[lobbyName] = nil
     lobbies[lobbyName] = nil
   SyncPracticeState()
-    TriggerClientEvent("dps-roxwoodracing:setLobbyState", -1, next(lobbies) ~= nil)
+    TriggerClientEvent("dps-proracing:setLobbyState", -1, next(lobbies) ~= nil)
 
     -- If this was the primary lobby, promote the next active lobby to drive
     -- the physical AMIR LED scoreboard. If none is running, resume the idle
@@ -1027,7 +1027,7 @@ FinishRaceIfDone = function(lobbyName, lob)
     end
 
     if Config.Leaderboard and Config.Leaderboard.enabled and wasPrimary and not primaryLobby then
-      exports['dps-roxwoodracing']:ShowIdleLeaderboard()
+      exports['dps-proracing']:ShowIdleLeaderboard()
     end
   end
   
@@ -1054,7 +1054,7 @@ local function AuthorisedFuelVehicle(src, netId)
   return nil
 end
 
-RegisterNetEvent("dps-roxwoodracing:server:setFuel", function(netId, level)
+RegisterNetEvent("dps-proracing:server:setFuel", function(netId, level)
   local src = source
   if RateLimit(src, "setFuel", 150) then return end
   level = tonumber(level)
@@ -1066,7 +1066,7 @@ RegisterNetEvent("dps-roxwoodracing:server:setFuel", function(netId, level)
     local st = Entity(v).state
     if st and st.set then st:set("fuel", level + 0.0, true) end
   end
-  TriggerClientEvent('dps-roxwoodracing:client:setFuel', -1, netId, level + 0.0)
+  TriggerClientEvent('dps-proracing:client:setFuel', -1, netId, level + 0.0)
 end)
 
 -- Remove a player from whatever lobby they are in: disconnect, character unload, or a client
@@ -1093,7 +1093,7 @@ local function RemovePlayer(src, reason)
     FinishRaceIfDone(name, lob)
   else
     local info = buildLobbyInfo(name, lob)
-    for _, pid in ipairs(lob.players) do TriggerClientEvent("dps-roxwoodracing:updateLobbyInfo", pid, info) end
+    for _, pid in ipairs(lob.players) do TriggerClientEvent("dps-proracing:updateLobbyInfo", pid, info) end
   end
 end
 
@@ -1102,13 +1102,13 @@ AddEventHandler('playerDropped', function() RemovePlayer(source, 'dropped') end)
 AddEventHandler('QBCore:Server:OnPlayerUnload', function(src) RemovePlayer(src, 'unload') end)
 
 -- The client could not resolve its race car within its own timeout: treat it like a failed spawn.
-RegisterNetEvent('dps-roxwoodracing:spawnFailed', function(lobbyName)
+RegisterNetEvent('dps-proracing:spawnFailed', function(lobbyName)
   local src = source
   if RateLimit(src, 'spawnFailed', 2000) then return end
   local lob = lobbies[lobbyName]
   if not lob or not table_contains(lob.players, src) then return end
   if (lob.lapProgress[src] or 0) > 0 or (lob.checkpointProgress[src] or 0) > 0 then return end
-  TriggerClientEvent('dps-roxwoodracing:updateLobbyInfo', src, nil)
+  TriggerClientEvent('dps-proracing:updateLobbyInfo', src, nil)
   RemovePlayer(src, 'spawnfail')
 end)
 
@@ -1125,6 +1125,6 @@ end)
 if Config.Leaderboard and Config.Leaderboard.enabled then
   CreateThread(function()
     Wait(3000)
-    exports['dps-roxwoodracing']:ShowIdleLeaderboard()
+    exports['dps-proracing']:ShowIdleLeaderboard()
   end)
 end

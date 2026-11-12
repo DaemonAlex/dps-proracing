@@ -2,7 +2,7 @@
 -- and grip while it is on a track, and goes back to exactly what it had when it leaves
 -- the track or the driver gets out. The "on a track" zones are made in practice.lua
 -- (armTracks) around each track's racing line and announced with the
--- dps-roxwoodracing:trackboost event. Settings: Config.Practice.trackBoost.
+-- dps-proracing:trackboost event. Settings: Config.Practice.trackBoost.
 -- Balance of performance (Damon 2026-10-25): a car listed in one of this track's grid sets
 -- is set to that class's target here instead (Config.Practice.balance), the same target the
 -- AI in that class runs, so players and AI in a class race on equal cars.
@@ -98,7 +98,7 @@ local function refresh(current)
     end
 end
 
-AddEventHandler('dps-roxwoodracing:trackboost', function(trackId, inside)
+AddEventHandler('dps-proracing:trackboost', function(trackId, inside)
     if inside then
         onTrack = trackId
     elseif onTrack == trackId then

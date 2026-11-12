@@ -6,16 +6,31 @@ TEST('MergeBestLap records only faster laps', function()
   bl, rec = Stats.MergeBestLap(bl, 'Long_Track', 0); FALSY(rec)
 end)
 
-TEST('Migrate renames the old table when only it exists', function()
+-- Runs Migrate with only the named table present and returns the RENAME query, if any.
+local function migrateWith(present)
   RESET_STUB(); Config = { Stats = { enabled = true } }; Bridge = {}
-  local seq, i = { 1, 0 }, 0
   local orig = MySQL.scalar.await
-  MySQL.scalar.await = function(sql, params) i = i + 1; STUB.queries[#STUB.queries+1] = { sql = sql, params = params }; return seq[i] end
+  MySQL.scalar.await = function(sql, params)
+    STUB.queries[#STUB.queries+1] = { sql = sql, params = params }
+    return (params and params[1] == present) and 1 or 0
+  end
   dofile('server/stats.lua')
   MySQL.scalar.await = orig
-  local renamed = false
-  for _, q in ipairs(STUB.queries) do if q.sql:find('RENAME TABLE') then renamed = true end end
-  TRUTHY(renamed)
+  for _, q in ipairs(STUB.queries) do if q.sql:find('RENAME TABLE') then return q.sql end end
+end
+
+TEST('Migrate renames the old table when only it exists', function()
+  local sql = migrateWith('speedway_stats')
+  TRUTHY(sql); TRUTHY(sql:find('speedway_stats TO dps_proracing_stats', 1, true))
+end)
+
+TEST('Migrate carries stats over from the dps-roxwoodracing name', function()
+  local sql = migrateWith('dps_roxwoodracing_stats')
+  TRUTHY(sql); TRUTHY(sql:find('dps_roxwoodracing_stats TO dps_proracing_stats', 1, true))
+end)
+
+TEST('Migrate leaves an existing table alone', function()
+  FALSY(migrateWith('dps_proracing_stats'))
 end)
 
 TEST('Save upserts with mode counters', function()

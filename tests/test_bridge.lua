@@ -16,7 +16,7 @@ TEST('qbx money and job go through exports.qbx_core:GetPlayer', function()
   local bal = 5000
   local fakePlayer = {
     PlayerData = { citizenid = 'ABC123', charinfo = { firstname = 'Sam', lastname = 'Rider' },
-                   job = { name = 'roxwoodracing', grade = { level = 2 }, isboss = false } },
+                   job = { name = 'proracing', grade = { level = 2 }, isboss = false } },
     Functions = {
       AddMoney = function(mtype, amount) bal = bal + amount; return true end,
       RemoveMoney = function(mtype, amount) if bal < amount then return false end bal = bal - amount; return true end,
@@ -31,8 +31,8 @@ TEST('qbx money and job go through exports.qbx_core:GetPlayer', function()
   TRUTHY(Bridge.RemoveMoney(7, 'cash', 1000, 'test')); EQ(Bridge.GetMoney(7, 'cash'), 4000)
   FALSY(Bridge.RemoveMoney(7, 'cash', 99999, 'test'))
   TRUTHY(Bridge.AddMoney(7, 'cash', 10, 'test')); EQ(bal, 4010)
-  EQ(Bridge.GetJob(7).name, 'roxwoodracing'); EQ(Bridge.GetJob(7).grade, 2)
-  TRUTHY(Bridge.HasJob(7, 'roxwoodracing', 2)); FALSY(Bridge.HasJob(7, 'roxwoodracing', 3)); FALSY(Bridge.HasJob(7, 'police', 0))
+  EQ(Bridge.GetJob(7).name, 'proracing'); EQ(Bridge.GetJob(7).grade, 2)
+  TRUTHY(Bridge.HasJob(7, 'proracing', 2)); FALSY(Bridge.HasJob(7, 'proracing', 3)); FALSY(Bridge.HasJob(7, 'police', 0))
   FALSY(Bridge.GetPlayerIdentifier(8), 'offline player')
 end)
 
@@ -42,5 +42,5 @@ TEST('no framework -> nil framework and safe returns', function()
   EQ(Bridge.Framework, nil)
   EQ(Bridge.GetPlayerIdentifier(1), nil)
   EQ(Bridge.GetMoney(1, 'cash'), 0)
-  FALSY(Bridge.HasJob(1, 'roxwoodracing', 0))
+  FALSY(Bridge.HasJob(1, 'proracing', 0))
 end)

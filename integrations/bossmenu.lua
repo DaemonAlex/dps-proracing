@@ -3,7 +3,7 @@ BossMenu = {}
 local function up(name) local st = GetResourceState(name) return st == 'started' or st == 'starting' end
 if IsDuplicityVersion() then
   BossMenu.Provider = up('qbx_management') and 'qbx_management' or (up('qb-bossmenu') and 'qb-bossmenu') or 'none'
-  print(('[dps-roxwoodracing] bossmenu: %s'):format(BossMenu.Provider))
+  print(('[dps-proracing] bossmenu: %s'):format(BossMenu.Provider))
   function BossMenu.Register()
     if BossMenu.Provider == 'qbx_management' then
       pcall(function()
@@ -16,7 +16,7 @@ else
   BossMenu.Provider = up('qbx_management') and 'qbx_management' or 'none'
   local itemId = nil
   -- qbx_management shows every dynamic item to every job, so only register ours while the
-  -- player actually holds the roxwoodracing job (and drop it when they leave it).
+  -- player actually holds the proracing job (and drop it when they leave it).
   function BossMenu.Sync()
     if BossMenu.Provider ~= 'qbx_management' then return end
     local mine = Bridge.HasJob(Config.Job.name, 0)
@@ -26,7 +26,7 @@ else
           title = Locale('raceway_control'),
           description = 'Fees, purse, sign, end race',
           icon = 'flag-checkered',
-          event = 'dps-roxwoodracing:client:openControl',
+          event = 'dps-proracing:client:openControl',
           args = { type = 'job', groupName = Config.Job.name },
         })
       end)

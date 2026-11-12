@@ -4,18 +4,18 @@ local recording, points, lineName = false, {}, nil
 
 local function stopRecording()
   recording = false
-  TriggerEvent('dps-roxwoodracing:practice:pause', false)
+  TriggerEvent('dps-proracing:practice:pause', false)
   local n = #points
   if n < (Config.Practice.minPoints or 10) then
     Notify(Config.Job.label, Locale('line_too_short', n), 'error')
     points = {}
     return
   end
-  TriggerServerEvent('dps-roxwoodracing:line:save', lineName, points)
+  TriggerServerEvent('dps-proracing:line:save', lineName, points)
   points = {}
 end
 
-RegisterNetEvent('dps-roxwoodracing:line:saved', function(ok, msg)
+RegisterNetEvent('dps-proracing:line:saved', function(ok, msg)
   Notify(Config.Job.label, msg, ok and 'success' or 'error', 8000)
 end)
 
@@ -32,7 +32,7 @@ RegisterCommand('recordline', function(_, args)
     return
   end
   lineName, points, recording = name, {}, true
-  TriggerEvent('dps-roxwoodracing:practice:pause', true)   -- the grid stands down while a line is recorded
+  TriggerEvent('dps-proracing:practice:pause', true)   -- the grid stands down while a line is recorded
   Notify(Config.Job.label, Locale('line_recording', name), 'inform', 9000)
 
   -- Bounded sampler: only runs while a recording is in progress.

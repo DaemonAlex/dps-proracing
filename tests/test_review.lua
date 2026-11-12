@@ -12,7 +12,7 @@ TEST('Payouts: allowPurse=false pays the pool only and says why', function()
 end)
 
 TEST('Staff.SetSetting rejects values above the cap', function()
-  RESET_STUB(); Config = { Job = { name = 'roxwoodracing', grades = {} }, Economy = { payouts = { [1] = 5000 }, entryFee = { amount = 1000 }, maxStaffSetting = 50000 } }
+  RESET_STUB(); Config = { Job = { name = 'proracing', grades = {} }, Economy = { payouts = { [1] = 5000 }, entryFee = { amount = 1000 }, maxStaffSetting = 50000 } }
   Bridge = {}; Race = {}; dofile('server/staff.lua')
   FALSY(Staff.SetSetting('payout1', 50001)); TRUTHY(Staff.SetSetting('payout1', 50000)); EQ(Config.Economy.payouts[1], 50000)
 end)
@@ -28,7 +28,7 @@ end)
 
 TEST('Rewards: solo race pays pool only; refund skipped for offline player', function()
   RESET_STUB()
-  Config = { Job = { name = 'roxwoodracing', label = 'RR' }, Economy = { purseSource = 'society', entryFee = { enabled = true, amount = 1000 }, poolSplit = { [1] = 60, [2] = 30, [3] = 10 },
+  Config = { Job = { name = 'proracing', label = 'RR' }, Economy = { purseSource = 'society', entryFee = { enabled = true, amount = 1000 }, poolSplit = { [1] = 60, [2] = 30, [3] = 10 },
              payouts = { [1] = 5000, [2] = 3000, [3] = 1500 }, participationReward = 500, bestLapBonus = 1000, moneyType = 'cash', minPlayersForPurse = 2 } }
   local cash = { [1] = 0 }
   Bridge = { Framework = 'qbx', GetPlayerIdentifier = function(pid) return cash[pid] and ('CID' .. pid) or nil end, GetPlayerName = function(pid) return 'P' .. pid end,

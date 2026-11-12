@@ -26,7 +26,7 @@ local paceMult = mode.defaultPace or 0.85     -- grid pace multiplier
 local players = {}                            -- host only: pid -> { prog, laps }
 local clockStart, lastClockAt = nil, 0
 
-local function log(msg) print('[dps-roxwoodracing] practice: ' .. msg) end
+local function log(msg) print('[dps-proracing] practice: ' .. msg) end
 local DRIVE_TASK = 0x93A5526E  -- SCRIPT_TASK_VEHICLE_DRIVE_TO_COORD
 
 -- Balance of performance (Config.Practice.balance): the class a model races in at the track
@@ -82,7 +82,7 @@ end
 
 local function fetchLines()
   if lines then return lines end
-  local got = lib.callback.await('dps-roxwoodracing:practice:lines', false)
+  local got = lib.callback.await('dps-proracing:practice:lines', false)
   if type(got) == 'table' and #got > 0 then lines = got end
   return lines
 end
@@ -272,7 +272,7 @@ local function spawn()
         end
         if pedNet ~= 0 then SetNetworkIdCanMigrate(pedNet, false) end
         if vehNet ~= 0 and pedNet ~= 0 then
-          TriggerServerEvent('dps-roxwoodracing:practice:keep', { vehNet, pedNet })
+          TriggerServerEvent('dps-proracing:practice:keep', { vehNet, pedNet })
         else
           log(('car %d: no network id after 5 s (veh %d, ped %d); it will be culled beyond ~424 m'):format(i, vehNet, pedNet))
         end
@@ -435,13 +435,13 @@ startSteering = function()
           if DoesEntityExist(c.veh) and DoesEntityExist(c.ped) then
             log(('car %d: re-bound to net %d after a culling round trip'):format(c.slot, c.vehNet))
             driveTo(c); c.lastTask = now
-            TriggerServerEvent('dps-roxwoodracing:practice:keep', { c.vehNet, c.pedNet })
+            TriggerServerEvent('dps-proracing:practice:keep', { c.vehNet, c.pedNet })
           end
         end
         if DoesEntityExist(c.veh) and DoesEntityExist(c.ped) then
           if (c.vehNet or 0) ~= 0 and now - (c.lastKeep or 0) > 30000 then
             c.lastKeep = now
-            TriggerServerEvent('dps-roxwoodracing:practice:keep', { c.vehNet, c.pedNet })
+            TriggerServerEvent('dps-proracing:practice:keep', { c.vehNet, c.pedNet })
           end
           local pos = GetEntityCoords(c.veh)
           -- Progress: the nearest of the next few points (never backwards), so a wobble or
@@ -563,16 +563,16 @@ startSteering = function()
         end)
         local names = {}
         for i = 1, math.min(9, #order) do names[i] = order[i].name end
-        TriggerServerEvent('dps-roxwoodracing:practice:board', cfg.boardTitle or 'PRAC', names)
+        TriggerServerEvent('dps-proracing:practice:board', cfg.boardTitle or 'PRAC', names)
       end
       Wait(cfg.tickMs or 250)
     end
-    TriggerEvent('dps-roxwoodracing:practice:boardOff')
+    TriggerEvent('dps-proracing:practice:boardOff')
   end)
 end
 
 -- A line is being recorded on this client: grid down until it is saved or abandoned.
-RegisterNetEvent('dps-roxwoodracing:practice:pause', function(on)
+RegisterNetEvent('dps-proracing:practice:pause', function(on)
   paused = on == true
   if paused then despawn() elseif nearTrack then CreateThread(spawn) end
 end)
@@ -620,17 +620,17 @@ local function armTracks()
         if curTrack and curTrack ~= t then despawn() end
         curTrack, nearTrack = t, true
         useTrackCfg(t)
-        TriggerEvent('dps-roxwoodracing:practice:trackChanged', t.id)
-        TriggerServerEvent('dps-roxwoodracing:practice:enter', t.id)
+        TriggerEvent('dps-proracing:practice:trackChanged', t.id)
+        TriggerServerEvent('dps-proracing:practice:enter', t.id)
         CreateThread(spawn)
       end,
       onExit = function()
         if curTrack ~= t then return end
         curTrack, nearTrack = nil, false
         useTrackCfg(nil)
-        TriggerEvent('dps-roxwoodracing:practice:trackChanged', nil)
+        TriggerEvent('dps-proracing:practice:trackChanged', nil)
         clockStart = nil
-        TriggerServerEvent('dps-roxwoodracing:practice:leave')
+        TriggerServerEvent('dps-proracing:practice:leave')
         despawn()
       end,
     })
@@ -639,8 +639,8 @@ local function armTracks()
       boostZones[#boostZones + 1] = lib.zones.sphere({
         coords = vector3(t.centre.x, t.centre.y, t.centre.z),
         radius = t.radius + (boost.margin or 40.0),
-        onEnter = function() TriggerEvent('dps-roxwoodracing:trackboost', t.id, true) end,
-        onExit = function() TriggerEvent('dps-roxwoodracing:trackboost', t.id, false) end,
+        onEnter = function() TriggerEvent('dps-proracing:trackboost', t.id, true) end,
+        onExit = function() TriggerEvent('dps-proracing:trackboost', t.id, false) end,
       })
     end
     local s0 = t.lines[1].pts[1]
@@ -656,7 +656,7 @@ local function armTracks()
         if clockStart then
           local ms = now - clockStart
           clockStart = now
-          TriggerServerEvent('dps-roxwoodracing:practice:lap', ms)
+          TriggerServerEvent('dps-proracing:practice:lap', ms)
         else
           clockStart = now
           Notify(Config.Job.label, Locale('practice_clock_started'), 'inform', 5000)
@@ -680,7 +680,7 @@ AddStateBagChangeHandler('rwPracticeAllowed', 'global', function(_, _, value)
 end)
 
 -- Server-elected host: only the host spawns and drives the grid
-RegisterNetEvent('dps-roxwoodracing:practice:host', function(on, track)
+RegisterNetEvent('dps-proracing:practice:host', function(on, track)
   isHost = on == true and (track == nil or (curTrack ~= nil and curTrack.id == track))
   log(('host=%s track=%s'):format(tostring(isHost), tostring(track)))
   if isHost then
@@ -690,27 +690,27 @@ RegisterNetEvent('dps-roxwoodracing:practice:host', function(on, track)
   end
 end)
 
-RegisterNetEvent('dps-roxwoodracing:practice:target', function(ms)
+RegisterNetEvent('dps-proracing:practice:target', function(ms)
   targetLap = ms
   if not ms then paceMult = mode.defaultPace or 0.85 end
 end)
 
-RegisterNetEvent('dps-roxwoodracing:practice:lapResult', function(ms, best, isBest, avg, laps)
+RegisterNetEvent('dps-proracing:practice:lapResult', function(ms, best, isBest, avg, laps)
   Notify(Config.Job.label, Locale(isBest and 'practice_lap_best' or 'practice_lap', Practice.FormatMs(ms)), isBest and 'success' or 'inform', 7000)
   Notify(Config.Job.label, Locale('practice_lap_detail', Practice.FormatMs(best), math.min(laps, mode.keepLaps or 5), Practice.FormatMs(avg)), 'inform', 7000)
 end)
 
-RegisterNetEvent('dps-roxwoodracing:practice:raceForming', function(lobbyName)
+RegisterNetEvent('dps-proracing:practice:raceForming', function(lobbyName)
   Notify(Config.Job.label, Locale('practice_forming', lobbyName), 'warning', 12000)
 end)
 
-RegisterNetEvent('dps-roxwoodracing:practice:cleared', function()
+RegisterNetEvent('dps-proracing:practice:cleared', function()
   clockStart = nil
   Notify(Config.Job.label, Locale('practice_cleared'), 'warning', 8000)
 end)
 
 -- A newly saved line joins the pool and replaces the running set.
-RegisterNetEvent('dps-roxwoodracing:line:saved', function(ok)
+RegisterNetEvent('dps-proracing:line:saved', function(ok)
   if not ok then return end
   despawn()
   lines, tracks = nil, nil

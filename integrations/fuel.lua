@@ -14,7 +14,7 @@ else
     if GetResourceState(name) == 'started' then Fuel.Provider = name break end
   end
 end
-print(('[dps-roxwoodracing] fuel: %s'):format(Fuel.Provider))
+print(('[dps-proracing] fuel: %s'):format(Fuel.Provider))
 
 function Fuel.Set(veh, level)
   if not veh or veh == 0 or not DoesEntityExist(veh) then return end
@@ -29,9 +29,9 @@ end
 
 function Fuel.SetFull(veh) Fuel.Set(veh, 100.0) end
 
-RegisterNetEvent('dps-roxwoodracing:client:setFuel', function(netId, level)
+RegisterNetEvent('dps-proracing:client:setFuel', function(netId, level)
   Fuel.Set(NetworkGetEntityFromNetworkId(netId), level)
 end)
-RegisterNetEvent('dps-roxwoodracing:client:fillFuel', function(netId)
+RegisterNetEvent('dps-proracing:client:fillFuel', function(netId)
   Fuel.SetFull(NetworkGetEntityFromNetworkId(netId))
 end)

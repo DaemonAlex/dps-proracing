@@ -10,7 +10,7 @@ function Rewards.FeeAmount()
 end
 
 local function notify(pid, msgKey, ntype, ...)
-  TriggerClientEvent('dps-roxwoodracing:client:notify', pid, Config.Job.label, Locale(msgKey, ...), ntype or 'inform')
+  TriggerClientEvent('dps-proracing:client:notify', pid, Config.Job.label, Locale(msgKey, ...), ntype or 'inform')
 end
 
 ---@return boolean ok, table|nil receipt { cid, amount } to store on the lobby
@@ -22,11 +22,11 @@ function Rewards.ChargeEntryFee(pid, lobbyName)
     notify(pid, 'entry_fee_insufficient', 'error', amount)
     return false
   end
-  if not Bridge.RemoveMoney(pid, eco().moneyType, amount, 'roxwoodracing-entryfee') then return false end
+  if not Bridge.RemoveMoney(pid, eco().moneyType, amount, 'proracing-entryfee') then return false end
   if not Banking.Deposit(account(), amount, 'Entry fee', ('Lobby %s'):format(tostring(lobbyName)), Bridge.GetPlayerName(pid)) then
     -- Bank refused: give the cash straight back rather than leave it in limbo
-    Bridge.AddMoney(pid, eco().moneyType, amount, 'roxwoodracing-entryfee-bounce')
-    print(('[dps-roxwoodracing] WARNING: society deposit failed for player %s; fee returned'):format(tostring(pid)))
+    Bridge.AddMoney(pid, eco().moneyType, amount, 'proracing-entryfee-bounce')
+    print(('[dps-proracing] WARNING: society deposit failed for player %s; fee returned'):format(tostring(pid)))
     return false
   end
   notify(pid, 'entry_fee_charged', 'inform', amount)
@@ -41,26 +41,26 @@ function Rewards.RefundEntryFee(pid, lobbyName, receipt)
   if not cid then return false end
   local label = Bridge.GetPlayerIdentifier(pid) and Bridge.GetPlayerName(pid) or cid
   if not Banking.Withdraw(account(), amount, 'Entry fee refund', ('Lobby %s'):format(tostring(lobbyName)), label) then
-    print(('[dps-roxwoodracing] WARNING: refund of %d for %s failed: account short'):format(amount, tostring(cid)))
+    print(('[dps-proracing] WARNING: refund of %d for %s failed: account short'):format(amount, tostring(cid)))
     return false
   end
   local paid
   if Bridge.GetPlayerIdentifier(pid) then
-    paid = Bridge.AddMoney(pid, eco().moneyType, amount, 'roxwoodracing-entryfee-refund')
+    paid = Bridge.AddMoney(pid, eco().moneyType, amount, 'proracing-entryfee-refund')
     if paid then notify(pid, 'entry_fee_refunded', 'success', amount) end
   else
-    paid = Bridge.AddMoneyByIdentifier(cid, eco().moneyType, amount, 'roxwoodracing-entryfee-refund')
+    paid = Bridge.AddMoneyByIdentifier(cid, eco().moneyType, amount, 'proracing-entryfee-refund')
   end
   if not paid then
     -- Could not deliver: put it back in the account and log, rather than lose it
     Banking.Deposit(account(), amount, 'Entry fee refund bounced', ('Lobby %s'):format(tostring(lobbyName)), label)
-    print(('[dps-roxwoodracing] WARNING: refund of %d for %s could not be delivered; returned to account'):format(amount, tostring(cid)))
+    print(('[dps-proracing] WARNING: refund of %d for %s could not be delivered; returned to account'):format(amount, tostring(cid)))
     return false
   end
   return true
 end
 
-local function reasonFor(title) return 'roxwoodracing-' .. title:lower():gsub('%s', '-') end
+local function reasonFor(title) return 'proracing-' .. title:lower():gsub('%s', '-') end
 
 local function payFromSource(pid, amount, title, message)
   if amount <= 0 then return true end
@@ -94,7 +94,7 @@ function Rewards.Settle(lob, results, bestLapPid)
       -- Pool money is the racers' own buy-ins parked in the account; paid first-come while it lasts.
       if p.pool > 0 then
         if Banking.Withdraw(account(), p.pool, 'Prize pool', msg, Bridge.GetPlayerName(pid)) then
-          if not Bridge.AddMoney(pid, eco().moneyType, p.pool, 'roxwoodracing-prizepool') then p.pool = 0 end
+          if not Bridge.AddMoney(pid, eco().moneyType, p.pool, 'proracing-prizepool') then p.pool = 0 end
         else
           p.pool = 0
         end
@@ -105,9 +105,9 @@ function Rewards.Settle(lob, results, bestLapPid)
       if pos == 1 and eco().vehiclePrize and covered then
         local okv, res = pcall(Garages.GiveVehicle, pid, eco().vehiclePrize, Rewards.UniquePlate('PRZ'))
         if okv and res then vehiclePrize = eco().vehiclePrize
-        else print(('[dps-roxwoodracing] WARNING: prize car not delivered to %s: %s'):format(tostring(pid), tostring(res))) end
+        else print(('[dps-proracing] WARNING: prize car not delivered to %s: %s'):format(tostring(pid), tostring(res))) end
       end
-      TriggerClientEvent('dps-roxwoodracing:client:rewardNotify', pid, {
+      TriggerClientEvent('dps-proracing:client:rewardNotify', pid, {
         positionPayout = p.position, positionLabel = labelFor[pos] or (pos .. 'th'),
         participation = p.participation, bestLapBonus = p.bestLap, poolPayout = p.pool,
         vehiclePrize = vehiclePrize, totalPayout = p.total, purseCovered = covered, purseReason = reason,

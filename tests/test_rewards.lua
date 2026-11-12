@@ -1,6 +1,6 @@
 local function setup(provider, balance)
   RESET_STUB()
-  Config = { Job = { name = 'roxwoodracing', label = 'Roxwood Raceway' },
+  Config = { Job = { name = 'proracing', label = 'Roxwood Raceway' },
              Economy = { purseSource = 'society', entryFee = { enabled = true, amount = 1000 }, poolSplit = { [1] = 60, [2] = 30, [3] = 10 },
                          payouts = { [1] = 5000, [2] = 3000, [3] = 1500 }, participationReward = 500, bestLapBonus = 1000, moneyType = 'cash' } }
   local cash = { [1] = 2000, [2] = 50 }
@@ -38,7 +38,7 @@ TEST('Settle pays purse from society when covered', function()
   EQ(cash[1], 2000 + 5000 + 500 + 1000 + 1200)
   EQ(cash[2], 50 + 3000 + 500 + 600)
   EQ(soc(), 50000 - (5000 + 500 + 1000 + 1200) - (3000 + 500 + 600))
-  EQ(STUB.clientEvents[1].name, 'dps-roxwoodracing:client:rewardNotify')
+  EQ(STUB.clientEvents[1].name, 'dps-proracing:client:rewardNotify')
 end)
 
 TEST('Settle pays pool only when society is short', function()
