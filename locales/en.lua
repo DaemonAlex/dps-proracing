@@ -84,7 +84,8 @@ Config.LocaleTable = {
   notify_interact_full        = "Press {1} to interact with the lobby. You can remap it in Settings > Key Bindings > FiveM under 'Speedway: Interact with Lobby Panel'. Or use /lobby.",
   lobby_controls_only_visible = "Lobby controls are only available while a lobby is visible.",
   select_vehicle_timer_fmt    = "Select your vehicle (%02d)",
-  blip_name                   = "Roxwood Speedway",
+  blip_name                   = "Grand Senora Raceway",
+  purse_capped                = "You have reached today's purse limit of ${1}. Buy-in pool money is still paid.",
   lobby_label_template        = "{1} | {2} ({3} players)",
   keybind_interact_label      = "Speedway: Interact with Lobby Panel",
   -- Race Classes

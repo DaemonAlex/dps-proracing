@@ -60,6 +60,17 @@ function Rewards.RefundEntryFee(pid, lobbyName, receipt)
   return true
 end
 
+--- Purse money this racer has already taken from the account today.
+local function purseKey(cid) return ('purse:%s:%s'):format(tostring(cid), os.date('%Y%m%d')) end
+function Rewards.PurseToday(cid)
+  if not cid or not GetResourceKvpInt then return 0 end
+  return GetResourceKvpInt(purseKey(cid)) or 0
+end
+local function addPurseToday(cid, amount)
+  if not cid or amount <= 0 or not SetResourceKvpInt then return end
+  SetResourceKvpInt(purseKey(cid), Rewards.PurseToday(cid) + amount)
+end
+
 local function reasonFor(title) return 'proracing-' .. title:lower():gsub('%s', '-') end
 
 local function payFromSource(pid, amount, title, message)
@@ -80,7 +91,25 @@ function Rewards.Settle(lob, results, bestLapPid)
   if not Bridge.Framework then return {}, true end
   local balance = eco().purseSource == 'house' and math.huge or Banking.GetBalance(account())
   local allowPurse = #results >= (eco().minPlayersForPurse or 1)
-  local payouts, covered, reason = Payouts.Compute(results, bestLapPid, eco(), lob.prizePool or 0, balance, allowPurse)
+  -- A short race pays part of the purse
+  local scale = RaceRules and RaceRules.PurseScale(lob.laps, eco().fullPurseLaps) or 1
+  local purse = eco()
+  if scale < 1 then
+    purse = setmetatable({ payouts = {}, participationReward = math.floor((eco().participationReward or 0) * scale),
+      bestLapBonus = math.floor((eco().bestLapBonus or 0) * scale) }, { __index = eco() })
+    for pos, amount in pairs(eco().payouts) do purse.payouts[pos] = math.floor(amount * scale) end
+  end
+  local payouts, covered, reason = Payouts.Compute(results, bestLapPid, purse, lob.prizePool or 0, balance, allowPurse)
+  -- Nobody takes more than the daily cap out of the account, however many races they run
+  if RaceRules and eco().dailyPurseCap then
+    for _, entry in ipairs(results) do
+      local p, cid = payouts[entry.id], Bridge.GetPlayerIdentifier(entry.id)
+      if p and cid then
+        RaceRules.CapPurse(p, Rewards.PurseToday(cid), eco().dailyPurseCap)
+        p.total = p.position + p.participation + p.bestLap + p.pool
+      end
+    end
+  end
   for _, p in pairs(payouts) do p.planned = p.total end
   local labelFor = { [1] = '1st', [2] = '2nd', [3] = '3rd' }
   for pos, entry in ipairs(results) do
@@ -100,6 +129,8 @@ function Rewards.Settle(lob, results, bestLapPid)
         end
       end
       p.total = p.position + p.participation + p.bestLap + p.pool
+      addPurseToday(Bridge.GetPlayerIdentifier(pid), p.position + p.participation + p.bestLap)
+      if p.capped then notify(pid, 'purse_capped', 'inform', eco().dailyPurseCap) end
       if covered and p.total < (p.planned or p.total) then covered = false; reason = reason or 'short' end
       local vehiclePrize = nil
       if pos == 1 and eco().vehiclePrize and covered then

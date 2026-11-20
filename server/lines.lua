@@ -134,6 +134,7 @@ end)
 -- Practice cars are client-owned networked entities that run a 4 km lap; OneSync culls
 -- a networked entity more than ~424 m from every player. Raise the radius for the
 -- caller's own cars and drivers (retried while the network object is still arriving).
+local keepAt = {}   -- src -> when they last asked
 local function keepEntity(src, netId, tries, first)
   first = first or tries
   local ent = NetworkGetEntityFromNetworkId(netId)
@@ -159,6 +160,10 @@ end
 RegisterNetEvent('dps-proracing:practice:keep', function(netIds)
   local src = source
   if type(netIds) ~= 'table' or #netIds > 4 then return end
+  -- Only a player who is at the track on practice, and not more than once every two seconds
+  local now = GetGameTimer()
+  if keepAt[src] and now - keepAt[src] < 2000 then return end
+  keepAt[src] = now
   for _, netId in ipairs(netIds) do
     if type(netId) == 'number' and netId > 0 then keepEntity(src, netId, 40) end
   end

@@ -164,4 +164,7 @@ function PracticeServer.ClearTrack(inLobby)
 end
 
 -- A new or re-recorded line may move or add a track.
-RegisterNetEvent('dps-proracing:line:save', function() tracks = nil end)
+RegisterNetEvent('dps-proracing:line:save', function()
+  if Staff and Staff.Can and not Staff.Can(source, 'director') then return end   -- staff only, like the save itself
+  tracks = nil
+end)
