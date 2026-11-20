@@ -45,6 +45,7 @@ end
 
 -- Refund cooldown tracker: prevents join-refund-rejoin cycling
 local _refundCD = {} -- [src] = timestamp
+local _lobbyCD  = {} -- [src] = when this player last opened a lobby
 
 -- Periodic cleanup of stale rate-limit / refund entries (every 5 min)
 CreateThread(function()
@@ -53,6 +54,7 @@ CreateThread(function()
     local now = GetGameTimer()
     for k, t in pairs(_rlBuckets) do if now - t > 60000 then _rlBuckets[k] = nil end end
     for k, t in pairs(_refundCD) do if now - t > 120000 then _refundCD[k] = nil end end
+    for k, t in pairs(_lobbyCD) do if now - t > 900000 then _lobbyCD[k] = nil end end
   end
 end)
 
@@ -244,6 +246,18 @@ RegisterNetEvent("dps-proracing:createLobby", function(args)
   if RateLimit(src, "createLobby", 2000) then return end
   local ok, errKey, c = Validate.CreateArgs(args, Config)
   if not ok then ServerNotify(src, Config.Job.label, Locale(errKey), 'error') return end
+  -- One lobby at a time, opened at the lobby host, and not again straight away
+  if findLobbyByPlayer(src) then ServerNotify(src, Config.Job.label, 'You are already in a lobby.', 'error') return end
+  local eco, host = Config.Economy, Config.LobbyPed and Config.LobbyPed.coords
+  local ped = GetPlayerPed(src)
+  if host and ped and ped ~= 0 and #(GetEntityCoords(ped) - vector3(host.x, host.y, host.z)) > (eco.lobbyDistance or 40.0) then
+    ServerNotify(src, Config.Job.label, 'Open a lobby at the raceway lobby host.', 'error') return
+  end
+  local wait = (eco.lobbyCooldownSec or 0) * 1000
+  if _lobbyCD[src] and GetGameTimer() - _lobbyCD[src] < wait then
+    ServerNotify(src, Config.Job.label, ('Wait %d seconds before opening another lobby.'):format(
+      math.ceil((wait - (GetGameTimer() - _lobbyCD[src])) / 1000)), 'error') return
+  end
   for _, existing in pairs(lobbies) do
     if existing.track == c.track then ServerNotify(src, Config.Job.label, Locale("track_in_use"), 'error') return end
   end
@@ -264,6 +278,7 @@ RegisterNetEvent("dps-proracing:createLobby", function(args)
   if openVeh then lobbies[c.name].vehicles[src] = openVeh end
   lobbies[c.name].fees[src] = receipt
   lobbies[c.name].prizePool = receipt and receipt.amount or 0
+  _lobbyCD[src] = GetGameTimer()
   if Config.DebugPrints then print("[DEBUG] Lobby created: " .. c.name .. " mode=" .. c.mode) end
   ServerNotify(src, Config.Job.label, Locale("lobby_created", c.name), 'success')
   if PracticeServer and PracticeServer.RaceForming then PracticeServer.RaceForming(c.name) end
@@ -289,6 +304,10 @@ RegisterNetEvent("dps-proracing:joinLobby", function(lobbyName, vehicle)
   end
 
   if not table_contains(lobby.players, src) then
+    if findLobbyByPlayer(src) then
+      ServerNotify(src, Config.Job.label, 'You are already in a lobby.', 'error')
+      return
+    end
     -- Check refund cooldown to prevent join-refund-rejoin cycling
     if _refundCD[src] then
       local elapsed = GetGameTimer() - _refundCD[src]
@@ -339,13 +358,30 @@ RegisterNetEvent("dps-proracing:checkpointPassed", function(lobbyName, idx)
   if RateLimit(src, "checkpointPassed", 200) then return end
 
   local lob = lobbies[lobbyName]
-  if not lob or not lob.isStarted then return end
+  if not lob or not lob.isStarted or not lob.raceLive then return end
   -- Verify player is in this lobby
-  if not table_contains(lob.players, src) then return end
+  if not table_contains(lob.players, src) or lob.finished[src] then return end
 
+  local cps = Config.Checkpoints[lob.track]
+  local rules = Config.RaceRules or {}
   local cur = lob.checkpointProgress[src] or 0
   -- Strict sequential: must be exactly the next checkpoint
-  if type(idx) == 'number' and idx == cur + 1 and idx <= #Config.Checkpoints[lob.track] then
+  if type(idx) == 'number' and idx == cur + 1 and idx <= #cps then
+    -- The server looks for the racer itself: at the checkpoint, and not sooner than a car could get there
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    if not RaceRules.AtCheckpoint(GetEntityCoords(ped), cps[idx], rules.checkpointRadius) then
+      if Config.DebugPrints then print(('[dps-proracing] checkpoint %d refused for %s: not there'):format(idx, src)) end
+      return
+    end
+    local now = GetGameTimer()
+    lob.cpTime = lob.cpTime or {}
+    local last = lob.cpTime[src]
+    if last and cur >= 1 and now - last < RaceRules.MinLegMs(cps[cur], cps[idx], rules.maxSpeed) then
+      if Config.DebugPrints then print(('[dps-proracing] checkpoint %d refused for %s: too soon'):format(idx, src)) end
+      return
+    end
+    lob.cpTime[src] = now
     lob.checkpointProgress[src] = idx
   end
 
@@ -502,6 +538,7 @@ local function SpawnRaceVehicles(lobbyName, lob, selected)
   end
   if not table_contains(lob.players, lob.owner) then lob.owner = lob.players[1] end
   lob.raceLive = true
+  lob.liveAt = GetGameTimer()
   SyncPracticeState()
 
   -- Broadcast all race vehicle netIds to all clients (clients ignore if not inRace)
@@ -548,6 +585,7 @@ local function StartOpenRace(lobbyName, lob)
     end
   end
   lob.raceLive = true
+  lob.liveAt = GetGameTimer()
   SyncPracticeState()
   TriggerClientEvent('dps-proracing:raceVehicles', -1, netIds)
   if Config.Ghosting.enabled and Config.Ghosting.startGhosted then
@@ -914,15 +952,23 @@ RegisterNetEvent("dps-proracing:lapPassed", function(lobbyName)
   if not table_contains(lob.players, src) then return end
   -- Prevent double-finish
   if lob.finished[src] then return end
+  if not lob.raceLive then return end
   -- Verify ALL checkpoints were passed before counting the lap
   if (lob.checkpointProgress[src] or 0) < #Config.Checkpoints[lob.track] then return end
+
+  -- No lap faster than the track allows. The clock for lap 1 starts when the race goes live.
+  local now = GetGameTimer()
+  local lapStart = math.max(lob.startTime[src] or now, (lob.lapProgress[src] or 0) == 0 and (lob.liveAt or 0) or 0)
+  if now - lapStart < RaceRules.MinLapMs(Config.Checkpoints[lob.track], Config.RaceRules, lob.track) then
+    if Config.DebugPrints then print(('[dps-proracing] lap refused for %s: %d ms is too fast'):format(src, now - lapStart)) end
+    return
+  end
 
   -- advance lap count
   lob.lapProgress[src] = (lob.lapProgress[src] or 0) + 1
   local curLap = lob.lapProgress[src]
 
   -- record lap time
-  local now = GetGameTimer()
   table.insert(lob.lapTimes[src], now - (lob.startTime[src] or now))
   lob.startTime[src] = now
 
@@ -1006,6 +1052,16 @@ FinishRaceIfDone = function(lobbyName, lob)
 
     -- Reset leader tracking for this lobby
     lob.lastLeader = -1
+
+    -- Spec cars are the raceway's: the server takes them back once the racers are out
+    local cars = {}
+    for _, veh in pairs(lob.spawned or {}) do cars[#cars + 1] = veh end
+    lob.spawned = {}
+    if #cars > 0 then
+      SetTimeout(15000, function()
+        for _, veh in ipairs(cars) do if DoesEntityExist(veh) then DeleteEntity(veh) end end
+      end)
+    end
 
     amirState[lobbyName] = nil
     lobbies[lobbyName] = nil
