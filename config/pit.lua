@@ -48,6 +48,12 @@ Config.PitStopTiming = {
 }
 
 
+-- Tire change: the animation the crew member at the wheel plays during a stop.
+-- The file ships with this script (stream/wymianakola@animation.ycd). If it does not load,
+-- the crew member plays the old general mechanic loop instead.
+Config.PitCrewTireAnim = { dict = 'wymianakola@animation', clip = 'wymiana_clip' }
+
+
 -- Pit Crew Idle Animations (randomly selected for variety)
 Config.PitCrewIdleAnims = {
     "WORLD_HUMAN_STAND_IMPATIENT",
