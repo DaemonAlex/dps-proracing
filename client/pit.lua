@@ -96,6 +96,94 @@ local function resnapZone(idx)
     end
 end
 
+-- Life between stops: while a player is near a box, each crew member keeps picking
+-- something new to do (Config.PitCrewLife), walking to another spot first most of the time.
+local function crewLife(idx)
+    local cfg = Config.PitCrewLife
+    local data = pitZones[idx]
+    if not cfg or not cfg.enabled or not data or data.life then return end
+    local acts = cfg.activities or {}
+    if #acts == 0 then return end
+    data.life = true
+
+    CreateThread(function()
+        local peds = {}
+        for _, p in ipairs(data.idle) do peds[#peds + 1] = p end
+        for _, p in ipairs(data.crew) do peds[#peds + 1] = p end
+        local st = {}
+        for i, p in ipairs(peds) do st[p] = { nextAt = GetGameTimer() + i * 1500, recent = {}, doing = nil } end
+        local minS, maxS = (cfg.seconds and cfg.seconds[1]) or 14, (cfg.seconds and cfg.seconds[2]) or 40
+        local wasInPit = false
+
+        local function pick(ped)
+            local taken = {}
+            for other, o in pairs(st) do if other ~= ped and o.doing then taken[o.doing] = true end end
+            for _, r in ipairs(st[ped].recent) do taken[r] = true end
+            local free = {}
+            for _, a in ipairs(acts) do if not taken[a] then free[#free + 1] = a end end
+            if #free == 0 then free = acts end
+            return free[math.random(#free)]
+        end
+
+        local function begin(ped, act)
+            local s = st[ped]
+            ClearPedTasks(ped)
+            SetEntityHeading(ped, (data.spawnHeading + math.random(-70, 70)) % 360.0)
+            FreezeEntityPosition(ped, true)
+            TaskStartScenarioInPlace(ped, act, 0, true)
+            s.doing, s.walkUntil = act, nil
+            s.recent[#s.recent + 1] = act
+            while #s.recent > (cfg.noRepeat or 5) do table.remove(s.recent, 1) end
+            s.nextAt = GetGameTimer() + math.random(minS, maxS) * 1000
+        end
+
+        while pitZones[idx] == data and data.near do
+            if inPit then
+                wasInPit = true          -- a stop is running: leave everyone to the stop code
+            else
+                local now = GetGameTimer()
+                if wasInPit then
+                    wasInPit = false
+                    for _, s in pairs(st) do s.walkUntil, s.nextAt = nil, now + math.random(2000, 6000) end
+                end
+                for _, ped in ipairs(peds) do
+                    local s = st[ped]
+                    if DoesEntityExist(ped) then
+                        if s.walkUntil then
+                            -- walking to a new spot: start the next thing on arrival
+                            local p = GetEntityCoords(ped)
+                            if #(vector2(p.x, p.y) - vector2(s.target.x, s.target.y)) < 0.8 or now > s.walkUntil then
+                                begin(ped, s.pending)
+                            end
+                        elseif now >= s.nextAt then
+                            local act = pick(ped)
+                            local home = data.home[ped]
+                            if home and math.random(100) <= (cfg.walkChance or 65) then
+                                -- a spot near their own, along the wall
+                                local h = math.rad(data.spawnHeading)
+                                local side = (math.random() * 2 - 1) * (cfg.walkSide or 3.5)
+                                local depth = (math.random() * 2 - 1) * (cfg.walkDepth or 1.5)
+                                local tx = home.x + math.cos(h) * side - math.sin(h) * depth
+                                local ty = home.y + math.sin(h) * side + math.cos(h) * depth
+                                s.target, s.pending, s.doing = vector3(tx, ty, home.z), act, act
+                                s.walkUntil = now + 9000
+                                ClearPedTasks(ped)
+                                FreezeEntityPosition(ped, false)
+                                TaskGoStraightToCoord(ped, tx, ty, home.z, 1.0, 9000, data.spawnHeading, 0.4)
+                            else
+                                begin(ped, act)
+                            end
+                        end
+                    end
+                end
+            end
+            Wait(500)
+        end
+
+        data.life = false
+    end)
+end
+
 local function spawnPitCrews()
     if Config.DebugPrints then print(("[dps-proracing] Config.PitCrewZones has %d entries"):format(#Config.PitCrewZones)) end
 
@@ -161,7 +249,11 @@ local function spawnPitCrews()
         data.point = lib.points.new({
             coords = vector3(zone.coords.x, zone.coords.y, zone.coords.z),
             distance = 120.0,
-            onEnter = function() CreateThread(function() resnapZone(idx) end) end,
+            onEnter = function()
+                data.near = true
+                CreateThread(function() resnapZone(idx); crewLife(idx) end)
+            end,
+            onExit = function() data.near = false end,
         })
 
         -- Blips disabled per server policy (static blips managed centrally)
