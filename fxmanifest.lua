@@ -5,7 +5,7 @@ lua54 'yes'
 name 'dps-proracing'
 author 'DPS Development (base: max_rox_speedway by MaxSuperTech, rox_speedway by DrCannabis/DaemonAlex)'
 description 'Pro racing: lobbies, Spec and Open races, pit crews, LED leaderboard, society-funded purses'
-version '3.2.2'
+version '3.3.0'
 
 shared_scripts {
   '@ox_lib/init.lua',
@@ -52,6 +52,7 @@ server_scripts {
   'server/leaderboard.lua',
   'server/lines.lua',
   'server/pitcars.lua',
+  'server/pitboxes.lua',
   'server/practice.lua',
   'server/signs.lua',
 }

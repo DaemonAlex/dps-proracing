@@ -1,8 +1,8 @@
 Config = Config or {}
 
 
--- DPS 2026-11-12: empty until the pit boxes at Grand Senora are marked in game. With no zones
--- there are no pit crews, and everything else runs. Each zone is:
+-- Pit boxes are marked in game: a Race Director stands in the box and runs /pitbox
+-- (see server/pitboxes.lua). Boxes can also be written here; each one is:
 --   { coords = vector3(x, y, z), heading = 180.0, radius = 6.0 },
 Config.PitCrewZones = {
 }

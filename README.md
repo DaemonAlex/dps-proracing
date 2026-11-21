@@ -469,6 +469,7 @@ menu spot (`Config.Job.bossCoords` in `config/economy.lua`).
 
 ## Recent changes
 
+- **21 November 2026 (3.3.0).** Pit boxes are marked in game. A Race Director stands in a pit box, facing the way the crew should face, and runs `/pitbox` (`/pitbox del` removes the nearest, `/pitbox list` counts them). They are stored in `dps_proracing_pitboxes` and a crew appears at each one for every player.
 - **21 November 2026 (3.2.2).** Pit crews: the crew member at the wheel plays a tire change animation (ships with the script; `Config.PitCrewTireAnim`). Pit boxes are still not marked, so no crews show yet.
 - **21 November 2026 (3.2.1).** The raceway board shows the DPS logo on its third tile. The video clip setting is gone: no clip was ever shipped, and the server warned about the missing file at every start.
 - **20 November 2026 (3.2.0).** Races are checked by the server. A checkpoint only counts when the racer is really there (within 75 m) and could have got there in the time since the last one. A lap only counts in a live race and never faster than the track's floor (15 s at Grand Senora, set in `Config.RaceRules`). Purse rules: 3 racers or more, a 1-lap race pays a third of the purse (3 laps pay all of it), and one racer can take at most $20,000 of purse money a day (buy-in pool money is not counted). A lobby is opened at the lobby host, one lobby per player, once every 5 minutes. Spec cars are removed by the server after the finish. Two practice events are now staff-only or rate limited. The map blip says Grand Senora Raceway.
