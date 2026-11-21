@@ -38,8 +38,6 @@
             @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .72; transform: scale(1.04); } }
             .adIn { animation: adin .6s ease-out; }
             @keyframes adin { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-            .ticker { display: inline-block; animation: ticker 14s linear infinite; }
-            @keyframes ticker { from { transform: translateX(256px); } to { transform: translateX(-100%); } }
         </style>
     </head>
     <body style="background-color: #000000;">
@@ -162,11 +160,10 @@
                 leaderboardUpdateAsText("", ["", "", "", "", "", "", "", "", ""]);
 
                 // Raceway mode (tracks other than Roxwood): tile 1 the raceway name, pulsing;
-                // tile 2 rotating trackside sponsors; tile 3 a video clip when the resource ships
-                // one (html/video/raceway.webm), else a running ticker. name = null restores the ads.
+                // tile 2 rotating trackside sponsors; tile 3 the DPS logo. name = null restores the ads.
                 const tileStyle = 'width:256px;height:128px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;overflow:hidden;';
                 let adTimer = null;
-                function setRaceway(name, ads, video) {
+                function setRaceway(name, ads) {
                     window.boardHeader = name;
                     const t1 = document.getElementById('slot_ad1'), t2 = document.getElementById('slot_ad2'), t3 = document.getElementById('slot_ad3');
                     if (adTimer) { clearInterval(adTimer); adTimer = null; }
@@ -185,14 +182,8 @@
                         t2.innerHTML = '<div class="adIn" style="' + tileStyle + 'font-size:40px;line-height:0.95;padding:0 8px;color:hsl(' + hue + ',90%,70%);">' + escapeHtml(ad) + '</div>';
                     };
                     showAd(); adTimer = setInterval(showAd, 5000);
-                    const ticker = () => { t3.innerHTML = '<div style="' + tileStyle + 'justify-content:flex-start;"><div class="ticker" style="white-space:nowrap;font-size:40px;color:#ffffff;">' + escapeHtml(name + '  •  ' + pool.join('  •  ') + '  •  ') + '</div></div>'; };
-                    if (video) {
-                        const v = document.createElement('video');
-                        v.src = video; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
-                        v.style.cssText = 'width:256px;height:128px;object-fit:cover;';
-                        v.onerror = ticker;
-                        t3.innerHTML = ''; t3.appendChild(v);
-                    } else ticker();
+                    // tile 3: the DPS logo
+                    t3.innerHTML = '<div style="' + tileStyle + 'padding:14px 18px;"><img src="dps-logo.svg" alt="" style="max-width:100%;max-height:100%;object-fit:contain;"></div>';
                 }
                 window.addEventListener('message', (event) => {
                     if (event.data && event.data.type === 'playerNames') {
@@ -207,7 +198,7 @@
                         crossFadeAd("slot_ad2", event.data.url[1]);
                         if (!window.boardHeader) crossFadeAd("slot_ad3", event.data.url[2]);
                     } else if (event.data && event.data.type === 'raceway') {
-                        setRaceway(event.data.name || null, event.data.ads || [], event.data.video || null);
+                        setRaceway(event.data.name || null, event.data.ads || []);
                     }
                 });
             }

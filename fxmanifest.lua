@@ -5,7 +5,7 @@ lua54 'yes'
 name 'dps-proracing'
 author 'DPS Development (base: max_rox_speedway by MaxSuperTech, rox_speedway by DrCannabis/DaemonAlex)'
 description 'Pro racing: lobbies, Spec and Open races, pit crews, LED leaderboard, society-funded purses'
-version '3.2.0'
+version '3.2.1'
 
 shared_scripts {
   '@ox_lib/init.lua',
@@ -66,8 +66,6 @@ files {
   'html/led.html',
   'html/BarlowCondensed-Bold.ttf',
   'html/ads/*.png',
-  'html/video/*.webm',
-  'html/video/*.mp4',
 }
 
 file 'stream/def_amir_speedway.ytyp'

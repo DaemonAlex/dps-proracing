@@ -88,10 +88,8 @@ Config.Leaderboard = {
     -- Sponsor slides for the three ad panels on the board (paths inside html/).
     adUrls = { "ads/dps_1.png", "ads/dps_2.png", "ads/dps_3.png" },
     -- Raceway mode at the other tracks (LS Circuit, Grand Senora): the board shows the
-    -- raceway name, these trackside sponsors in rotation, and a video clip on the third tile
-    -- when racewayVideo names a file under html/ (webm or mp4; drop one in and set the name).
+    -- raceway name, these trackside sponsors in rotation, and the DPS logo on the third tile.
     racewayAds = { "ATOMIC", "GLOBE OIL", "RON", "XERO", "SPRUNK", "eCOLA", "LOS SANTOS CUSTOMS", "HAYES AUTOS", "WEAZEL NEWS", "PIT STOP CAFE", "RACE DAY" },
-    racewayVideo = "video/raceway.webm",
 }
 
 
