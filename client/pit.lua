@@ -96,9 +96,7 @@ local function resnapZone(idx)
     end
 end
 
-CreateThread(function()
-    Wait(100)
-
+local function spawnPitCrews()
     if Config.DebugPrints then print(("[dps-proracing] Config.PitCrewZones has %d entries"):format(#Config.PitCrewZones)) end
 
     local pool = buildModelPool()
@@ -170,11 +168,9 @@ CreateThread(function()
     end
 
     for _, hash in ipairs(pool) do SetModelAsNoLongerNeeded(hash) end
-end)
+end
 
--- Cleanup on resource stop to avoid orphan peds and blips
-AddEventHandler('onClientResourceStop', function(resName)
-    if resName ~= GetCurrentResourceName() then return end
+local function clearPitCrews()
     for _, zone in pairs(pitZones) do
         if zone.idle then
             for _, p in ipairs(zone.idle) do if DoesEntityExist(p) then DeleteEntity(p) end end
@@ -184,7 +180,49 @@ AddEventHandler('onClientResourceStop', function(resName)
         end
         if zone.point then zone.point:remove() end
     end
-    -- Blips removed (static blips disabled per policy)
+    pitZones = {}
+end
+
+-- Pit boxes: the ones written in config/pit.lua, plus the ones a Race Director marked in
+-- game with /pitbox (kept by the server in GlobalState.dpsPitBoxes).
+local writtenZones = {}
+for i, z in ipairs(Config.PitCrewZones or {}) do writtenZones[i] = z end
+local buildToken = 0
+
+local function rebuildPitBoxes(boxes)
+    buildToken = buildToken + 1
+    local mine = buildToken
+    local zones = {}
+    for i, z in ipairs(writtenZones) do zones[i] = z end
+    for _, b in ipairs(boxes or {}) do
+        zones[#zones + 1] = { coords = vector3(b.x + 0.0, b.y + 0.0, b.z + 0.0), heading = b.h + 0.0, radius = b.r + 0.0 }
+    end
+    Config.PitCrewZones = zones
+    CreateThread(function()
+        while inPit do Wait(500) end          -- never pull a crew away mid-stop
+        if mine ~= buildToken then return end -- a newer list arrived meanwhile
+        clearPitCrews()
+        spawnPitCrews()
+    end)
+end
+
+CreateThread(function()
+    Wait(100)
+    rebuildPitBoxes(GlobalState.dpsPitBoxes)
+end)
+
+AddStateBagChangeHandler('dpsPitBoxes', 'global', function(_, _, value)
+    rebuildPitBoxes(value)
+end)
+
+RegisterNetEvent('dps-proracing:pitbox:result', function(ok, msg)
+    lib.notify({ title = 'Pit box', description = msg, type = ok and 'success' or 'error' })
+end)
+
+-- Cleanup on resource stop to avoid orphan peds and blips
+AddEventHandler('onClientResourceStop', function(resName)
+    if resName ~= GetCurrentResourceName() then return end
+    clearPitCrews()
 end)
 
 --------------------------------------------------------------------------------
