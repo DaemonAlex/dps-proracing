@@ -284,6 +284,10 @@ local function RunPitStop(veh, idx)
     RequestAnimDict(refuelDict)
     RequestAnimDict(mechDict)
     RequestAnimDict(bendDict)
+    -- tire change (ships with this script); optional, so it is not part of the wait below
+    local tireAnim = Config.PitCrewTireAnim
+    local tireDict = tireAnim and tireAnim.dict and DoesAnimDictExist(tireAnim.dict) and tireAnim.dict or nil
+    if tireDict then RequestAnimDict(tireDict) end
     local adDeadline = GetGameTimer() + 1500
     while (not HasAnimDictLoaded(refuelDict) or not HasAnimDictLoaded(mechDict) or not HasAnimDictLoaded(bendDict)) and GetGameTimer() < adDeadline do
         Wait(0)
@@ -440,8 +444,16 @@ local function RunPitStop(veh, idx)
     -- play animations (dicts requested earlier)
     TaskPlayAnim(refuelPed, "timetable@gardener@filling_can", "gar_ig_5_filling_can", 8.0, -8.0, -1, 49, 0.0, false, false, false)
 
-    -- 2) Jack/tire ped: play mechanic loop at wheel
-    TaskPlayAnim(jackPed, "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 8.0, -8.0, -1, 1, 0.0, false, false, false)
+    -- 2) Jack/tire ped: the tire change at the wheel, else the old mechanic loop
+    if tireDict then
+        local tireDeadline = GetGameTimer() + 1500
+        while not HasAnimDictLoaded(tireDict) and GetGameTimer() < tireDeadline do Wait(0) end
+    end
+    if tireDict and HasAnimDictLoaded(tireDict) then
+        TaskPlayAnim(jackPed, tireDict, tireAnim.clip, 8.0, -8.0, -1, 1, 0.0, false, false, false)
+    else
+        TaskPlayAnim(jackPed, "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 8.0, -8.0, -1, 1, 0.0, false, false, false)
+    end
 
     -- fill + repair (using configurable timing)
     local refuelSteps = timing.refuelSteps or 15
@@ -488,6 +500,7 @@ local function RunPitStop(veh, idx)
     RemoveAnimDict("timetable@gardener@filling_can")
     RemoveAnimDict("anim@amb@clubhouse@tutorial@bkr_tut_ig3@")
     RemoveAnimDict("mini@repair")
+    if tireDict then RemoveAnimDict(tireDict) end
     ClearPedTasks(hoodPed)
     ClearPedTasks(jackPed)
 
