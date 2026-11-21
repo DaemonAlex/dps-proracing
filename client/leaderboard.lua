@@ -104,8 +104,7 @@ CreateThread(function()
     AddEventHandler('dps-proracing:practice:trackChanged', function(id)
         local tb = (Config.Practice and Config.Practice.trackBlips) or {}
         local name = id and tb.boardNames and tb.boardNames[id] or nil
-        local video = (Config.Leaderboard.racewayVideo and Config.Leaderboard.racewayVideo ~= '') and ('nui://dps-proracing/html/' .. Config.Leaderboard.racewayVideo) or nil
-        if DuiObject then SendDuiMessage(DuiObject, json.encode({ type = 'raceway', name = name, ads = Config.Leaderboard.racewayAds or {}, video = video })) end
+        if DuiObject then SendDuiMessage(DuiObject, json.encode({ type = 'raceway', name = name, ads = Config.Leaderboard.racewayAds or {} })) end
     end)
     AddEventHandler('dps-proracing:sign:nearby', function()
         CreateThread(function() ApplyReplacement("placed sign") end)
