@@ -469,6 +469,7 @@ menu spot (`Config.Job.bossCoords` in `config/economy.lua`).
 
 ## Recent changes
 
+- **21 November 2026 (3.3.1).** Pit crews move and work between stops. Each crew member picks one of 18 things to do (`Config.PitCrewLife`), walks to another spot in the box first most of the time, does not repeat their last five picks, and never does the same thing as a crewmate at the same moment.
 - **21 November 2026 (3.3.0).** Pit boxes are marked in game. A Race Director stands in a pit box, facing the way the crew should face, and runs `/pitbox` (`/pitbox del` removes the nearest, `/pitbox list` counts them). They are stored in `dps_proracing_pitboxes` and a crew appears at each one for every player.
 - **21 November 2026 (3.2.2).** Pit crews: the crew member at the wheel plays a tire change animation (ships with the script; `Config.PitCrewTireAnim`). Pit boxes are still not marked, so no crews show yet.
 - **21 November 2026 (3.2.1).** The raceway board shows the DPS logo on its third tile. The video clip setting is gone: no clip was ever shipped, and the server warned about the missing file at every start.

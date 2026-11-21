@@ -54,6 +54,41 @@ Config.PitStopTiming = {
 Config.PitCrewTireAnim = { dict = 'wymianakola@animation', clip = 'wymiana_clip' }
 
 
+-- What the crew does between stops. Each crew member picks something from this list, does
+-- it for a while, then picks something else. Most of the time they walk to another spot
+-- in the box first. A crew member does not repeat any of their last `noRepeat` picks, and
+-- two crew members in one box do not do the same thing at the same time.
+-- The names are GTA's own "scenarios". Add or remove lines freely.
+Config.PitCrewLife = {
+    enabled     = true,
+    walkChance  = 65,          -- % of the time they walk to a new spot before the next thing
+    walkSide    = 3.5,         -- how far along the wall they wander from their own spot (m)
+    walkDepth   = 1.5,         -- how far towards / away from the wall (m)
+    seconds     = { 14, 40 },  -- how long one thing lasts (shortest, longest)
+    noRepeat    = 5,
+    activities  = {
+        'WORLD_HUMAN_STAND_IMPATIENT',      -- waiting, shifting weight
+        'WORLD_HUMAN_CLIPBOARD',            -- checking the sheet
+        'WORLD_HUMAN_STAND_MOBILE',         -- on the phone
+        'WORLD_HUMAN_AA_COFFEE',            -- coffee
+        'WORLD_HUMAN_DRINKING',             -- a drink
+        'WORLD_HUMAN_AA_SMOKE',             -- smoking
+        'WORLD_HUMAN_HANG_OUT_STREET',      -- standing around, talking
+        'WORLD_HUMAN_LEANING',              -- leaning
+        'WORLD_HUMAN_GUARD_STAND',          -- arms folded, watching the lane
+        'WORLD_HUMAN_BINOCULARS',           -- watching the track
+        'WORLD_HUMAN_CAR_PARK_ATTENDANT',   -- waving a car in
+        'WORLD_HUMAN_WELDING',              -- welding
+        'WORLD_HUMAN_HAMMERING',            -- hammering
+        'WORLD_HUMAN_JANITOR',              -- sweeping the box
+        'WORLD_HUMAN_MAID_CLEAN',           -- wiping down
+        'CODE_HUMAN_MEDIC_KNEEL',           -- kneeling, looking at something low
+        'CODE_HUMAN_MEDIC_TEND_TO_DEAD',    -- kneeling, working with both hands
+        'WORLD_HUMAN_COP_IDLES',            -- hands on belt
+    },
+}
+
+
 -- Pit Crew Idle Animations (randomly selected for variety)
 Config.PitCrewIdleAnims = {
     "WORLD_HUMAN_STAND_IMPATIENT",
